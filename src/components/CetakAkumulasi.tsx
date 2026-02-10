@@ -27,6 +27,12 @@ import {
   usePegawaiStorage,
   useInstansiStorage,
 } from "@/hooks/useStorage";
+import {
+  JENJANG_TO_KOEFISIEN,
+  getKoefisienByJenjang,
+  PENILAIAN_TO_PROSENTASE,
+} from "@/constants";
+import { calculateMonthsBetween } from "@/utils/dateUtils";
 
 export function CetakAkumulasi() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -43,6 +49,9 @@ export function CetakAkumulasi() {
   const [includeAkIntegrasi, setIncludeAkIntegrasi] = useState(false);
   const [includeAkPendidikan, setIncludeAkPendidikan] = useState(false);
   const [selectedPegawaiId, setSelectedPegawaiId] = useState<string>("");
+  const [selectedPeriodIds, setSelectedPeriodIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Get unique employees from penilaianAK
   const employeesWithAssessments = useMemo(() => {
@@ -60,48 +69,67 @@ export function CetakAkumulasi() {
           new Date(b.tanggalAkhirPenilaian).getTime() -
           new Date(a.tanggalAkhirPenilaian).getTime(),
       );
-  }, [penilaianAK, selectedPegawaiId]);
+  }, [selectedPegawaiId, penilaianAK]);
 
-  const handleOpenDialog = () => {
-    if (penilaianAK.length === 0) {
-      alert("Tidak ada data untuk dicetak");
-      return;
+  // Get selected employee info
+  const selectedEmployee = useMemo(() => {
+    return pegawai.find((p) => p.id === selectedPegawaiId);
+  }, [selectedPegawaiId, pegawai]);
+
+  // Reset selected periods when employee changes
+  useMemo(() => {
+    if (employeePeriods.length > 0) {
+      setSelectedPeriodIds(new Set(employeePeriods.map((p) => p.id)));
+    } else {
+      setSelectedPeriodIds(new Set());
     }
-    setShowDialog(true);
-  };
+  }, [employeePeriods]);
+
+  // Get selected periods based on checkbox selection
+
+  // Get instansi info
+  const selectedInstansi = useMemo(() => {
+    if (!selectedEmployee?.instansiId) return null;
+    return instansi.find((i) => i.id === selectedEmployee.instansiId);
+  }, [selectedEmployee, instansi]);
 
   const handleGeneratePDF = async () => {
-    if (!selectedPegawaiId) {
-      alert("Silakan pilih 1 pegawai");
+    if (
+      !selectedPegawaiId ||
+      !selectedEmployee ||
+      employeePeriods.length === 0 ||
+      selectedPeriodIds.size === 0
+    ) {
+      alert("Pilih pegawai dengan data penilaian terlebih dahulu");
       return;
     }
 
-    setShowDialog(false);
     setIsGenerating(true);
 
     try {
-      const selectedEmployee = pegawai.find((p) => p.id === selectedPegawaiId);
-      // Get instansi from the first penilaian
-      const firstPenilaian = penilaianAK.find(
-        (p) => p.pegawaiId === selectedPegawaiId,
+      // Get only selected periods
+      const employeePenilaian = employeePeriods.filter((p) =>
+        selectedPeriodIds.has(p.id),
       );
-      const employeeInstansi = firstPenilaian
-        ? instansi.find((i) => i.id === firstPenilaian.instansiId)
-        : null;
-      const penilai = firstPenilaian
-        ? pegawai.find((p) => p.id === firstPenilaian.penilaiId)
-        : null;
 
-      // Get all penilaian for this employee
-      const employeePenilaian = employeePeriods;
-
-      // Build akList with all periods
-      const akList = employeePenilaian.map((penilaian) => ({
-        penilaian: penilaian.predikat,
-        prosentase: penilaian.prosentase || 0,
-        koefisien: penilaian.koefisien || 0,
-        jumlahAngkaKredit: penilaian.angkaKredit,
-      }));
+      // Build akList with selected periods (recalculate AK using formula)
+      const akList = employeePenilaian.map((penilaian) => {
+        const koefisien = getKoefisienByJenjang(penilaian.jenjang);
+        const prosentase =
+          (PENILAIAN_TO_PROSENTASE as any)[penilaian.predikat] || 0;
+        const months = calculateMonthsBetween(
+          penilaian.tanggalAwalPenilaian,
+          penilaian.tanggalAkhirPenilaian,
+        );
+        const jumlahAngkaKredit =
+          (months / 12) * koefisien * (prosentase / 100);
+        return {
+          penilaian: penilaian.predikat,
+          prosentase,
+          koefisien,
+          jumlahAngkaKredit,
+        };
+      });
 
       // Calculate total AK
       let totalAngkaKredit = akList.reduce(
@@ -129,212 +157,190 @@ export function CetakAkumulasi() {
         totalAngkaKredit += akPendidikanValue;
       }
 
-      // Create report data - single page with all periods
-      const reportData = {
-        nomor: selectedPegawaiId.slice(0, 8).toUpperCase(),
-        tahun:
-          employeePenilaian.length > 0
-            ? new Date(employeePenilaian[0].tanggalAkhirPenilaian).getFullYear()
-            : new Date().getFullYear(),
-        namaInstansi: employeeInstansi?.name || "Instansi",
-        periodeAwal:
-          employeePenilaian.length > 0
-            ? employeePenilaian[employeePenilaian.length - 1]
-                .tanggalAwalPenilaian
-            : "-",
-        periodeAkhir:
-          employeePenilaian.length > 0
-            ? employeePenilaian[0].tanggalAkhirPenilaian
-            : "-",
-        pegawai: {
-          nama: selectedEmployee?.nama || "-",
-          nip: selectedEmployee?.nip || "-",
-          noSeriKarpeg: selectedEmployee?.no_seri_karpeg || "-",
-          tempatLahir: selectedEmployee?.tempat_lahir || "-",
-          tanggalLahir: selectedEmployee?.tanggal_lahir || "-",
-          jenisKelamin: selectedEmployee?.jenis_kelamin || "-",
-          pangkat: selectedEmployee?.pangkat || "-",
-          golongan: selectedEmployee?.golongan || "-",
-          tmtPangkat: selectedEmployee?.tmt_pangkat || "-",
-          unitKerja: selectedEmployee?.unit_kerja || "-",
-        },
-        jabatanDanTmt: `${selectedEmployee?.jabatan || "-"} / ${selectedEmployee?.tmt_jabatan || "-"}`,
-        includeAngkaIntegrasi: akIntegrasiValue > 0,
-        angkaIntegrasiValue: akIntegrasiValue,
-        includeAkPendidikan: akPendidikanValue > 0,
-        akPendidikanValue: akPendidikanValue,
-        akList: akList,
-        totalAngkaKredit: totalAngkaKredit,
-        tempatDitetapkan:
-          employeePenilaian.length > 0
-            ? employeePenilaian[0].tempatDitetapkan
-            : "-",
-        tanggalDitetapkan:
-          employeePenilaian.length > 0
-            ? employeePenilaian[0].tanggalDitetapkan
-            : "-",
-        penilai: {
-          nama: penilai?.nama || "-",
-          pangkat: penilai?.pangkat || "-",
-          golongan: penilai?.golongan || "-",
-          nip: penilai?.nip || "-",
-        },
-      };
-
-      // Create single page document
+      // Create PDF document
       const doc = (
         <Document>
-          <AkumulasiReportPage {...reportData} />
+          <AkumulasiReportPage
+            nomor={employeePeriods[0]?.id?.slice(0, 8) || "1"}
+            tahun={new Date(
+              employeePeriods[0]?.tanggalAkhirPenilaian || new Date(),
+            ).getFullYear()}
+            namaInstansi={selectedInstansi?.nama || "DINAS PENDIDIKAN"}
+            periodeAwal={employeePeriods[0]?.tanggalAwalPenilaian || "-"}
+            periodeAkhir={
+              employeePeriods[employeePeriods.length - 1]
+                ?.tanggalAkhirPenilaian || "-"
+            }
+            pegawai={{
+              nama: selectedEmployee?.nama || "-",
+              nip: selectedEmployee?.nip || "-",
+              noSeriKarpeg: selectedEmployee?.no_seri_karpeg || "-",
+              tempatLahir: selectedEmployee?.tempat_lahir || "-",
+              tanggalLahir: selectedEmployee?.tanggal_lahir || "-",
+              jenisKelamin: selectedEmployee?.jenis_kelamin || "-",
+              pangkat: selectedEmployee?.pangkat || "-",
+              golongan: selectedEmployee?.golongan || "-",
+              tmtPangkat: selectedEmployee?.tmt_pangkat || "-",
+              unitKerja: selectedEmployee?.unit_kerja || "-",
+            }}
+            jabatanDanTmt={`${selectedEmployee?.jabatan || "-"} / ${selectedEmployee?.tmt_jabatan || "-"}`}
+            includeAngkaIntegrasi={akIntegrasiValue > 0}
+            angkaIntegrasiValue={akIntegrasiValue}
+            includeAkPendidikan={akPendidikanValue > 0}
+            akPendidikanValue={akPendidikanValue}
+            akList={akList}
+            totalAngkaKredit={totalAngkaKredit}
+            tempatDitetapkan={employeePeriods[0]?.tempatDitetapkan || "-"}
+            tanggalDitetapkan={employeePeriods[0]?.tanggalDitetapkan || "-"}
+            penilai={{
+              nama: selectedInstansi?.namaPenilai || "-",
+              pangkat: selectedInstansi?.pangkatPenilai || "-",
+              golongan: selectedInstansi?.golonganPenilai || "-",
+              nip: selectedInstansi?.nipPenilai || "-",
+            }}
+          />
         </Document>
       );
 
       // Generate blob
       const blob = await pdf(doc).toBlob();
-
-      // Download
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `akumulasi-${selectedEmployee?.nama?.replace(/\s+/g, "-") || "pegawai"}.pdf`;
+      link.download = `akumulasi-angka-kredit-${selectedEmployee?.nama || "pegawai"}.pdf`;
       link.click();
-
       URL.revokeObjectURL(url);
+
+      setShowDialog(false);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Terjadi kesalahan saat membuat PDF. Silakan coba lagi.");
+      alert("Gagal membuat PDF. Silakan coba lagi.");
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Cetak Akumulasi Angka Kredit</h1>
-          <p className="text-muted-foreground mt-1">
-            Cetak dokumen akumulasi angka kredit untuk satu pegawai (semua
-            periode dalam satu halaman)
-          </p>
-        </div>
-        <Button
-          onClick={handleOpenDialog}
-          disabled={isGenerating || penilaianAK.length === 0}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          {isGenerating ? "Membuat PDF..." : "Cetak PDF Akumulasi"}
-        </Button>
-      </div>
-
-      <div className="border rounded-lg p-6 bg-muted/50">
-        <h2 className="font-semibold mb-2">Informasi Data</h2>
-        <div className="space-y-1 text-sm">
-          <p>
-            Total Penilaian: <strong>{penilaianAK.length}</strong>
-          </p>
-          <p>
-            Total Pegawai: <strong>{employeesWithAssessments.length}</strong>
-          </p>
-        </div>
-      </div>
+    <>
+      <Button onClick={() => setShowDialog(true)} variant="outline">
+        <Download className="mr-2 h-4 w-4" />
+        Cetak Akumulasi
+      </Button>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Konfigurasi Cetak Akumulasi</DialogTitle>
+            <DialogTitle>Cetak Akumulasi Angka Kredit</DialogTitle>
             <DialogDescription>
-              Pilih 1 pegawai untuk dicetak (semua periode dalam 1 halaman)
+              Pilih pegawai dan konfigurasi untuk menghasilkan PDF akumulasi
+              angka kredit.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Employee Selection - Single Select */}
-            <div className="space-y-2">
-              <Label htmlFor="pegawai" className="font-semibold">
-                Pilih Pegawai
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="pegawai" className="text-right">
+                Pegawai
               </Label>
               <Select
                 value={selectedPegawaiId}
                 onValueChange={setSelectedPegawaiId}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih pegawai..." />
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Pilih Pegawai" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employeesWithAssessments
-                    .sort((a, b) => a.nama.localeCompare(b.nama))
-                    .map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nama} ({p.nip})
-                      </SelectItem>
-                    ))}
+                  {employeesWithAssessments.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.nama} - {emp.nip}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              {selectedPegawaiId && (
-                <div className="mt-2 space-y-1">
-                  <p className="text-sm font-medium">
-                    Periode yang akan dicetak:
-                  </p>
-                  {employeePeriods.map((pn, idx) => (
-                    <div
-                      key={pn.id}
-                      className="flex items-center space-x-2 text-sm"
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Periode</Label>
+              <div className="col-span-3 font-medium">
+                {employeePeriods.length} periode penilaian
+              </div>
+            </div>
+
+            {employeePeriods.length > 0 && (
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label className="text-right">Pilih Periode</Label>
+                <div className="col-span-3 text-sm">
+                  <div className="mb-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedPeriodIds(
+                          new Set(employeePeriods.map((p) => p.id)),
+                        )
+                      }
+                      className="text-xs underline mr-2 text-blue-600"
                     >
-                      <div className="w-4 h-4 border rounded flex items-center justify-center bg-muted">
-                        <span className="text-xs">✓</span>
-                      </div>
-                      <span>
-                        {pn.tanggalAwalPenilaian} s.d.{" "}
-                        {pn.tanggalAkhirPenilaian}
-                        <span className="text-muted-foreground ml-2">
-                          ({pn.predikat} - {pn.angkaKredit.toFixed(2)} AK)
-                        </span>
-                      </span>
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPeriodIds(new Set())}
+                      className="text-xs underline text-blue-600"
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                  {employeePeriods.map((period) => (
+                    <div
+                      key={period.id}
+                      className="flex items-center gap-2 mb-1"
+                    >
+                      <Checkbox
+                        id={`period-${period.id}`}
+                        checked={selectedPeriodIds.has(period.id)}
+                        onCheckedChange={(checked) => {
+                          const newSet = new Set(selectedPeriodIds);
+                          if (checked) {
+                            newSet.add(period.id);
+                          } else {
+                            newSet.delete(period.id);
+                          }
+                          setSelectedPeriodIds(newSet);
+                        }}
+                      />
+                      <Label
+                        htmlFor={`period-${period.id}`}
+                        className="cursor-pointer"
+                      >
+                        {period.tanggalAwalPenilaian} s.d.{" "}
+                        {period.tanggalAkhirPenilaian}
+                      </Label>
                     </div>
                   ))}
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Total: <strong>{employeePeriods.length}</strong> periode
-                  </p>
                 </div>
-              )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="akIntegrasi" className="text-right">
+                Include AK Integrasi
+              </Label>
+              <Checkbox
+                id="akIntegrasi"
+                checked={includeAkIntegrasi}
+                onCheckedChange={(checked) => setIncludeAkIntegrasi(!!checked)}
+              />
             </div>
 
-            {/* AK Integrasi */}
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="akIntegrasi"
-                  checked={includeAkIntegrasi}
-                  onCheckedChange={(checked) =>
-                    setIncludeAkIntegrasi(checked as boolean)
-                  }
-                />
-                <Label
-                  htmlFor="akIntegrasi"
-                  className="font-semibold cursor-pointer"
-                >
-                  Sertakan AK Integrasi
-                </Label>
-              </div>
-            </div>
-
-            {/* AK Pendidikan */}
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="akPendidikan"
-                  checked={includeAkPendidikan}
-                  onCheckedChange={(checked) =>
-                    setIncludeAkPendidikan(checked as boolean)
-                  }
-                />
-                <Label
-                  htmlFor="akPendidikan"
-                  className="font-semibold cursor-pointer"
-                >
-                  Sertakan AK Pendidikan
-                </Label>
-              </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="akPendidikan" className="text-right">
+                Include AK Pendidikan
+              </Label>
+              <Checkbox
+                id="akPendidikan"
+                checked={includeAkPendidikan}
+                onCheckedChange={(checked) => setIncludeAkPendidikan(!!checked)}
+              />
             </div>
           </div>
 
@@ -342,13 +348,19 @@ export function CetakAkumulasi() {
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               Batal
             </Button>
-            <Button onClick={handleGeneratePDF} disabled={!selectedPegawaiId}>
-              <Download className="mr-2 h-4 w-4" />
-              Generate PDF
+            <Button
+              onClick={handleGeneratePDF}
+              disabled={
+                !selectedPegawaiId ||
+                employeePeriods.length === 0 ||
+                isGenerating
+              }
+            >
+              {isGenerating ? "Memproses..." : "Cetak PDF"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

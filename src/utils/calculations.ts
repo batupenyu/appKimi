@@ -66,6 +66,19 @@ export const PANGKAT_NAMES: Record<string, string> = {
   "IV/e": "Pembina Utama",
 };
 
+// Base values for jenjang pendidikan (used as fallback when golongongan is not available)
+export const JENJANG_PENDIDIKAN_BASE_VALUES: Record<string, number> = {
+  sd: 1,
+  smp: 2,
+  sma: 3,
+  d1: 15,
+  d2: 20,
+  d3: 25,
+  d4s1: 30,
+  s2: 50,
+  s3: 100,
+};
+
 interface CalculationResult {
   pangkatMinimal: number;
   jenjangMinimal: number | null;
@@ -129,3 +142,31 @@ export function calculateTargetAK(
     teksTujuan: tujuan || "Jabatan ......",
   };
 }
+
+// Function to calculate AK Pendidikan
+// Formula: 25% × Jenjang Minimal (based on current golongongan's next jenjang requirement from MINIMAL_AK_MAPPING)
+// If golongongan is provided, uses MINIMAL_AK_MAPPING to get jenjang minimal
+// If golongongan is not provided, uses baseValue from jenjang (fallback)
+export const calculateAkPendidikan = (
+  jenjang: string,
+  tahunLulus: number,
+  golongongan?: string,
+): number => {
+  // If golongongan is provided, use jenjang minimal from MINIMAL_AK_MAPPING
+  if (golongongan) {
+    const target = AK_TARGET_MAP[golongongan];
+    if (target) {
+      const mappingKey = `${golongongan}|${target.nextGolongan}`;
+      const customMapping = MINIMAL_AK_MAPPING[mappingKey];
+
+      if (customMapping && customMapping[1] !== null) {
+        // Use jenjang minimal (25% × jenjang minimal)
+        return customMapping[1] * 0.25;
+      }
+    }
+  }
+
+  // Fallback: use baseValue × 0.25
+  const baseValue = JENJANG_PENDIDIKAN_BASE_VALUES[jenjang] || 0;
+  return baseValue * 0.25;
+};

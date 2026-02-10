@@ -52,6 +52,7 @@ import {
   PENILAIAN_OPTIONS,
   PENILAIAN_TO_PROSENTASE,
   JENJANG_TO_KOEFISIEN,
+  getKoefisienByJenjang,
 } from "@/constants";
 import { toast } from "sonner";
 import { calculateMonthsBetween } from "@/utils/dateUtils";
@@ -121,7 +122,7 @@ export function PenilaianAngkaKreditManager() {
       ? (PENILAIAN_TO_PROSENTASE as any)[formData.predikat] || 0
       : 0;
     const koefisien = formData.jenjang
-      ? (JENJANG_TO_KOEFISIEN as any)[formData.jenjang] || 0
+      ? getKoefisienByJenjang(formData.jenjang)
       : 0;
 
     // Calculate months between start and end dates
@@ -134,9 +135,7 @@ export function PenilaianAngkaKreditManager() {
         : 0;
 
     // Calculate angka kredit: (months/12) * koefisien * (prosentase / 100)
-    const angkaKredit = Math.round(
-      (months / 12) * koefisien * (prosentase / 100),
-    );
+    const angkaKredit = (months / 12) * koefisien * (prosentase / 100);
 
     return { prosentase, koefisien, angkaKredit, months };
   }, [
@@ -220,7 +219,14 @@ export function PenilaianAngkaKreditManager() {
       return;
     }
 
-    const { prosentase, koefisien, angkaKredit } = calculatedValues;
+    const { prosentase, angkaKredit: calculatedAngkaKredit } = calculatedValues;
+
+    // Calculate koefisien based on employee's jenjang
+    const koefisien = getKoefisienByJenjang(formData.jenjang);
+
+    // Calculate angkaKredit with the new koefisien
+    const angkaKredit =
+      (calculatedValues.months / 12) * koefisien * (prosentase / 100);
 
     addPenilaianAK({
       pegawaiId: formData.pegawaiId,
@@ -281,7 +287,14 @@ export function PenilaianAngkaKreditManager() {
       return;
     }
 
-    const { prosentase, koefisien, angkaKredit } = calculatedValues;
+    const { prosentase, angkaKredit: calculatedAngkaKredit } = calculatedValues;
+
+    // Calculate koefisien based on employee's jenjang
+    const koefisien = getKoefisienByJenjang(formData.jenjang);
+
+    // Calculate angkaKredit with the new koefisien
+    const angkaKredit =
+      (calculatedValues.months / 12) * koefisien * (prosentase / 100);
 
     updatePenilaianAK(selectedPenilaian.id, {
       pegawaiId: formData.pegawaiId,
@@ -310,13 +323,12 @@ export function PenilaianAngkaKreditManager() {
         item.tanggalAwalPenilaian,
         item.tanggalAkhirPenilaian,
       );
-      const koefisien = (JENJANG_TO_KOEFISIEN as any)[item.jenjang] || 0;
+      const golongongan = pegawaiMap.get(item.pegawaiId)?.golongan;
+      const koefisien = getKoefisienByJenjang(item.jenjang);
       const prosentase = (PENILAIAN_TO_PROSENTASE as any)[item.predikat] || 0;
-      const angkaKredit = Math.round(
-        (months / 12) * koefisien * (prosentase / 100),
-      );
+      const angkaKredit = (months / 12) * koefisien * (prosentase / 100);
 
-      updatePenilaianAK(item.id, { angkaKredit });
+      updatePenilaianAK(item.id, { koefisien, angkaKredit });
     });
     toast.success("Semua angka kredit telah dihitung ulang");
   };
@@ -450,8 +462,17 @@ export function PenilaianAngkaKreditManager() {
                   {
                     penilaian: penilaian.predikat,
                     prosentase: penilaian.prosentase || 0,
-                    koefisien: penilaian.koefisien || 0,
-                    jumlahAngkaKredit: penilaian.angkaKredit,
+                    koefisien: getKoefisienByJenjang(penilaian.jenjang),
+                    jumlahAngkaKredit:
+                      ((calculateMonthsBetween(
+                        penilaian.tanggalAwalPenilaian,
+                        penilaian.tanggalAkhirPenilaian,
+                      ) /
+                        12) *
+                        getKoefisienByJenjang(penilaian.jenjang) *
+                        ((PENILAIAN_TO_PROSENTASE as any)[penilaian.predikat] ||
+                          0)) /
+                      100,
                   },
                 ]}
                 totalAngkaKredit={totalAngkaKredit}
@@ -690,7 +711,15 @@ export function PenilaianAngkaKreditManager() {
             </div>
             <div>
               <span className="text-muted-foreground">Koefisien:</span>{" "}
-              <span className="font-medium">{calculatedValues.koefisien}</span>
+              <span className="font-medium">
+                {(() => {
+                  const golongongan = formData.pegawaiId
+                    ? pegawaiMap.get(formData.pegawaiId)?.golongan
+                    : null;
+                  return calculatedValues.koefisien;
+                  return calculatedValues.koefisien;
+                })()}
+              </span>
             </div>
             <div>
               <span className="text-muted-foreground">Durasi (bulan):</span>{" "}
@@ -699,7 +728,17 @@ export function PenilaianAngkaKreditManager() {
             <div>
               <span className="text-muted-foreground">Angka Kredit:</span>{" "}
               <Badge variant="default" className="font-mono">
-                {calculatedValues.angkaKredit.toFixed(2)}
+                {(() => {
+                  const golongongan = formData.pegawaiId
+                    ? pegawaiMap.get(formData.pegawaiId)?.golongan
+                    : null;
+                  const koefisien = getKoefisienByJenjang(formData.jenjang);
+                  const angkaKredit =
+                    (calculatedValues.months / 12) *
+                    koefisien *
+                    (calculatedValues.prosentase / 100);
+                  return angkaKredit.toFixed(2);
+                })()}
               </Badge>
             </div>
           </div>
@@ -816,11 +855,35 @@ export function PenilaianAngkaKreditManager() {
                         {item.prosentase}%
                       </TableCell>
                       <TableCell className="text-right">
-                        {item.koefisien}
+                        {(() => {
+                          const golongongan = pegawaiMap.get(
+                            item.pegawaiId,
+                          )?.golongan;
+                          return golongongan
+                            ? getKoefisienByJenjang(item.jenjang).toFixed(2)
+                            : item.koefisien;
+                        })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <Badge variant="default" className="font-mono">
-                          {item.angkaKredit.toFixed(2)}
+                          {(() => {
+                            const golongongan = pegawaiMap.get(
+                              item.pegawaiId,
+                            )?.golongan;
+                            const koefisien = getKoefisienByJenjang(
+                              item.jenjang,
+                            );
+                            const prosentase =
+                              (PENILAIAN_TO_PROSENTASE as any)[item.predikat] ||
+                              0;
+                            const months = calculateMonthsBetween(
+                              item.tanggalAwalPenilaian,
+                              item.tanggalAkhirPenilaian,
+                            );
+                            const angkaKredit =
+                              (months / 12) * koefisien * (prosentase / 100);
+                            return angkaKredit.toFixed(2);
+                          })()}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">

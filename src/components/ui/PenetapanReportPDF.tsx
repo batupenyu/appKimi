@@ -181,11 +181,7 @@ export const PenetapanReportPage = (data: KonversiReportData) => {
     periodeAkhir,
     pegawai,
     jabatanDanTmt,
-    includeAngkaIntegrasi,
-    angkaIntegrasiValue,
-    includeAkPendidikan,
     akPendidikanValue,
-    akList = [],
     totalAngkaKredit,
     tempatDitetapkan,
     tanggalDitetapkan,
@@ -200,8 +196,7 @@ export const PenetapanReportPage = (data: KonversiReportData) => {
   // Placeholder calculations (mimicking the HTML logic)
   const totalLama = 0;
   const akPendidikan = akPendidikanValue || 0;
-  const akIntegrasi = includeAngkaIntegrasi ? angkaIntegrasiValue || 0 : 0;
-  const totalPerformanceOnly = totalAngkaKredit - akPendidikan - akIntegrasi;
+  const totalPerformanceOnly = totalAngkaKredit - akPendidikan;
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "-";
@@ -524,49 +519,142 @@ export const PenetapanReportPage = (data: KonversiReportData) => {
         </View>
       </View>
 
-      {/* Conclusion */}
-      <View style={{ marginBottom: 10 }}>
-        <Text style={{ marginBottom: 5 }}>
-          Berdasarkan Penetapan Angka Kredit tersebut, maka:
-        </Text>
-        <Text style={{ marginBottom: 5 }}>
-          Angka Kredit Minimal yang diperlukan untuk naik jenjang/jabatan
-          setingkat lebih tinggi:
-        </Text>
-        <Text style={{ marginBottom: 5, marginLeft: 20 }}>
-          <Text style={styles.bold}>Pangkat/Jabatan Tujuan: </Text>
-          {teksTujuan}
-        </Text>
-        <Text style={{ marginBottom: 5, marginLeft: 20 }}>
-          <Text style={styles.bold}>Angka Kredit Minimal: </Text>
-          {formatNumber(pangkatMinimal)} / {formatNumber(jenjangMinimal)}
-        </Text>
-        <Text style={{ marginBottom: 5, marginLeft: 20 }}>
-          <Text style={styles.bold}>Angka Kredit yang dicapai: </Text>
-          {formatNumber(totalAngkaKredit)}
-        </Text>
-        <Text style={{ marginBottom: 5, marginLeft: 20 }}>
-          <Text style={styles.bold}>
-            Sisa Angka Kredit yang harus dicapai:{" "}
+      {/* Recommendation Table */}
+      <View style={styles.borderedTable}>
+        <View style={styles.tableRow}>
+          <Text
+            style={{
+              ...styles.borderedCell,
+              ...styles.headerCell,
+              width: "100%",
+              borderBottomWidth: 1,
+            }}
+          >
+            KONVERSI KE ANGKA KREDIT
           </Text>
-          {formatNumber(pangkatMinimal - totalAngkaKredit)} /{" "}
-          {formatNumber((jenjangMinimal || 0) - totalAngkaKredit)}
-        </Text>
-        <Text
-          style={{
-            marginTop: 10,
-            borderStyle: "solid",
-            borderColor: "#000",
-            borderWidth: 1,
-            padding: 5,
-          }}
-        >
-          <Text style={styles.bold}>
-            {hasilPangkat >= 0 ? "Dapat" : "Tidak dapat"}
-          </Text>{" "}
-          dipertimbangkan untuk kenaikan Pangkat/Jabatan setingkat lebih tinggi
-          ke <Text style={styles.bold}>{teksTujuan}</Text>
-        </Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text
+            style={{
+              ...styles.borderedCell,
+              ...styles.headerCell,
+              width: "50%",
+            }}
+          >
+            Keterangan
+          </Text>
+          <Text
+            style={{
+              ...styles.borderedCell,
+              ...styles.headerCell,
+              width: "25%",
+            }}
+          >
+            Pangkat
+          </Text>
+          <Text
+            style={{
+              ...styles.borderedCell,
+              ...styles.headerCell,
+              width: "25%",
+            }}
+          >
+            Jenjang Jabatan
+          </Text>
+        </View>
+
+        {/* Row 1 */}
+        <View style={styles.tableRow}>
+          <Text
+            style={{
+              ...styles.borderedCell,
+              ...styles.justifyAlign,
+              width: "50%",
+            }}
+          >
+            Angka Kredit minimal yang harus dipenuhi untuk kenaikan pangkat /
+            jenjang
+          </Text>
+          <Text style={{ ...styles.borderedCell, width: "25%" }}>
+            {formatNumber(pangkatMinimal)}
+          </Text>
+          <Text style={{ ...styles.borderedCell, width: "25%" }}>
+            {formatNumber(jenjangMinimal)}
+          </Text>
+        </View>
+
+        {/* Row 2 */}
+        <View style={styles.tableRow}>
+          <Text
+            style={{
+              ...styles.borderedCell,
+              ...styles.justifyAlign,
+              width: "50%",
+            }}
+          >
+            {hasilPangkat < 0 ? (
+              <>
+                <Text style={{ textDecoration: "line-through" }}>
+                  Kelebihan
+                </Text>
+                /Kekurangan *) Angka Kredit yang harus dicapai untuk kenaikan
+                pangkat.
+              </>
+            ) : (
+              "Kelebihan/Kekurangan *) Angka Kredit yang harus dicapai untuk\n"
+            )}
+            kenaikan pangkat.
+          </Text>
+          <Text style={{ ...styles.borderedCell, width: "25%" }}>
+            {formatNumber(hasilPangkat)}
+          </Text>
+          <Text style={{ ...styles.borderedCell, width: "25%" }}>-</Text>
+        </View>
+
+        {/* Row 3 */}
+        <View style={styles.tableRow}>
+          <Text
+            style={{
+              ...styles.borderedCell,
+              ...styles.justifyAlign,
+              width: "50%",
+            }}
+          >
+            {hasilJenjang < 0 ? (
+              <>
+                <Text style={{ textDecoration: "line-through" }}>
+                  Kelebihan
+                </Text>
+                /Kekurangan *) Angka Kredit yang harus dicapai untuk kenaikan
+                jenjang.
+              </>
+            ) : (
+              "Kelebihan/Kekurangan *) Angka Kredit yang harus dicapai untuk\n"
+            )}
+            kenaikan jenjang.
+          </Text>
+          <Text style={{ ...styles.borderedCell, width: "25%" }}>-</Text>
+          <Text style={{ ...styles.borderedCell, width: "25%" }}>
+            {formatNumber(hasilJenjang)}
+          </Text>
+        </View>
+
+        {/* Row 4 */}
+        <View style={styles.tableRow}>
+          <Text
+            style={{
+              ...styles.borderedCell,
+              ...styles.justifyAlign,
+              width: "100%",
+            }}
+          >
+            <Text style={styles.bold}>
+              {hasilPangkat >= 0 ? "Dapat" : "Tidak dapat"}
+            </Text>{" "}
+            dipertimbangkan untuk kenaikan Pangkat/Jabatan setingkat lebih
+            tinggi ke <Text style={styles.bold}>{teksTujuan}</Text>
+          </Text>
+        </View>
       </View>
 
       {/* Footer */}

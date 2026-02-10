@@ -28,6 +28,12 @@ import {
   useInstansiStorage,
 } from "@/hooks/useStorage";
 import { calculateTargetAK } from "@/utils/calculations";
+import {
+  JENJANG_TO_KOEFISIEN,
+  getKoefisienByJenjang,
+  PENILAIAN_TO_PROSENTASE,
+} from "@/constants";
+import { calculateMonthsBetween } from "@/utils/dateUtils";
 
 export function CetakPenetapan() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -43,6 +49,8 @@ export function CetakPenetapan() {
   // Configuration state
   const [selectedPegawaiId, setSelectedPegawaiId] = useState<string[]>([]);
   const [selectedPeriodIds, setSelectedPeriodIds] = useState<string[]>([]);
+  const [includeAkIntegrasi, setIncludeAkIntegrasi] = useState(false);
+  const [includeAkPendidikan, setIncludeAkPendidikan] = useState(false);
 
   // Get unique employees from penilaianAK
   const employeesWithAssessments = useMemo(() => {
@@ -50,9 +58,9 @@ export function CetakPenetapan() {
     return pegawai.filter((p) => uniqueIds.has(p.id));
   }, [penilaianAK, pegawai]);
 
-  // Get all periods for selected employee
+  // Get all periods for selected employees
   const employeePeriods = useMemo(() => {
-    if (!selectedPegawaiId.length) return [];
+    if (selectedPegawaiId.length === 0) return [];
     return penilaianAK
       .filter((p) => selectedPegawaiId.includes(p.pegawaiId))
       .sort(
@@ -60,19 +68,48 @@ export function CetakPenetapan() {
           new Date(b.tanggalAkhirPenilaian).getTime() -
           new Date(a.tanggalAkhirPenilaian).getTime(),
       );
-  }, [penilaianAK, selectedPegawaiId]);
+  }, [selectedPegawaiId, penilaianAK]);
+
+  // Toggle functions
+  const togglePegawai = (id: string) => {
+    setSelectedPegawaiId((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
+  };
+
+  const togglePeriod = (id: string) => {
+    setSelectedPeriodIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
+  };
+
+  const toggleAllPeriods = () => {
+    if (selectedPeriodIds.length === employeePeriods.length) {
+      setSelectedPeriodIds([]);
+    } else {
+      setSelectedPeriodIds(employeePeriods.map((p) => p.id));
+    }
+  };
 
   const handleOpenDialog = () => {
     if (penilaianAK.length === 0) {
       alert("Tidak ada data untuk dicetak");
       return;
     }
+    setSelectedPegawaiId([]);
+    setSelectedPeriodIds([]);
+    setIncludeAkIntegrasi(false);
+    setIncludeAkPendidikan(false);
     setShowDialog(true);
   };
 
   const handleGeneratePDF = async () => {
     if (selectedPegawaiId.length === 0) {
       alert("Silakan pilih setidaknya 1 pegawai");
+      return;
+    }
+    if (selectedPeriodIds.length === 0) {
+      alert("Silakan pilih setidaknya 1 periode");
       return;
     }
 
@@ -91,21 +128,22 @@ export function CetakPenetapan() {
             const selectedEmployee = pegawai.find(
               (p) => p.id === penilaian.pegawaiId,
             );
-            const employeeInstansi = instansi.find(
-              (i) => i.id === penilaian.instansiId,
-            );
-            const penilai = pegawai.find((p) => p.id === penilaian.penilaiId);
+            const penilai = instansi.find((i) => i.id === penilaian.penilaiId);
 
             // Calculate AK for this single period
             const employeeAkIntegrasi = angkaIntegrasi.find(
               (ai) => ai.pegawaiId === penilaian.pegawaiId,
             );
-            const akIntegrasiValue = employeeAkIntegrasi?.value
-              ? employeeAkIntegrasi.value
+            const akIntegrasiValue =
+              includeAkIntegrasi && employeeAkIntegrasi?.value
+                ? employeeAkIntegrasi.value
+                : 0;
+            const akPendidikanValue = includeAkPendidikan
+              ? getTotalAkPendidikanByPegawai(
+                  penilaian.pegawaiId,
+                  selectedEmployee?.golongan || "",
+                )
               : 0;
-            const akPendidikanValue = getTotalAkPendidikanByPegawai(
-              penilaian.pegawaiId,
-            );
             const totalAngkaKredit =
               penilaian.angkaKredit + akIntegrasiValue + akPendidikanValue;
 
@@ -118,9 +156,11 @@ export function CetakPenetapan() {
             return (
               <PenetapanReportPage
                 key={penilaian.id}
-                nomor={penilaian.id.slice(0, 8).toUpperCase()}
-                tahun={new Date(penilaian.tanggalAkhirPenilaian).getFullYear()}
-                namaInstansi={employeeInstansi?.name || "Instansi"}
+                nomor={penilaian.id?.slice(0, 8) || "1"}
+                tahun={new Date(
+                  penilaian.tanggalAkhirPenilaian || new Date(),
+                ).getFullYear()}
+                namaInstansi={instansi[0]?.name || "DINAS PENDIDIKAN"}
                 periodeAwal={penilaian.tanggalAwalPenilaian}
                 periodeAkhir={penilaian.tanggalAkhirPenilaian}
                 pegawai={{
@@ -144,18 +184,28 @@ export function CetakPenetapan() {
                   {
                     penilaian: penilaian.predikat,
                     prosentase: penilaian.prosentase || 0,
-                    koefisien: penilaian.koefisien || 0,
-                    jumlahAngkaKredit: penilaian.angkaKredit,
+                    koefisien: getKoefisienByJenjang(penilaian.jenjang),
+                    jumlahAngkaKredit: Number(
+                      ((calculateMonthsBetween(
+                        penilaian.tanggalAwalPenilaian,
+                        penilaian.tanggalAkhirPenilaian,
+                      ) /
+                        12) *
+                        getKoefisienByJenjang(penilaian.jenjang) *
+                        ((PENILAIAN_TO_PROSENTASE as any)[penilaian.predikat] ||
+                          0)) /
+                        100,
+                    ),
                   },
                 ]}
                 totalAngkaKredit={totalAngkaKredit}
                 tempatDitetapkan={penilaian.tempatDitetapkan}
                 tanggalDitetapkan={penilaian.tanggalDitetapkan}
                 penilai={{
-                  nama: penilai?.nama || "-",
-                  pangkat: penilai?.pangkat || "-",
-                  golongan: penilai?.golongan || "-",
-                  nip: penilai?.nip || "-",
+                  nama: penilai?.name || "-",
+                  pangkat: "-",
+                  golongan: "-",
+                  nip: "-",
                 }}
                 {...calculation}
               />
@@ -166,73 +216,32 @@ export function CetakPenetapan() {
 
       // Generate blob
       const blob = await pdf(doc).toBlob();
-
-      // Download
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `penetapan-multi-${filteredPenilaian.length}-periode.pdf`;
+      link.download = `penetapan-angka-kredit-${filteredPenilaian.length}-periode.pdf`;
       link.click();
-
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Terjadi kesalahan saat membuat PDF. Silakan coba lagi.");
+      alert("Gagal membuat PDF. Silakan coba lagi.");
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  // Toggle handlers
-  const togglePegawai = (id: string) => {
-    setSelectedPegawaiId((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
-    );
-  };
-
-  const toggleAllPeriods = () => {
-    if (selectedPeriodIds.length === employeePeriods.length) {
+      setSelectedPegawaiId([]);
       setSelectedPeriodIds([]);
-    } else {
-      setSelectedPeriodIds(employeePeriods.map((p) => p.id));
     }
-  };
-
-  const togglePeriod = (id: string) => {
-    setSelectedPeriodIds((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
-    );
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Cetak Penetapan Angka Kredit</h1>
-          <p className="text-muted-foreground mt-1">
-            Cetak dokumen penetapan angka kredit untuk satu atau lebih periode
-          </p>
-        </div>
-        <Button
-          onClick={handleOpenDialog}
-          disabled={isGenerating || penilaianAK.length === 0}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          {isGenerating ? "Membuat PDF..." : "Cetak PDF Penetapan"}
-        </Button>
-      </div>
-
-      <div className="border rounded-lg p-6 bg-muted/50">
-        <h2 className="font-semibold mb-2">Informasi Data</h2>
-        <div className="space-y-1 text-sm">
-          <p>
-            Total Penilaian: <strong>{penilaianAK.length}</strong>
-          </p>
-          <p>
-            Total Pegawai: <strong>{employeesWithAssessments.length}</strong>
-          </p>
-        </div>
-      </div>
+    <>
+      <Button
+        onClick={handleOpenDialog}
+        disabled={isGenerating || penilaianAK.length === 0}
+        variant="outline"
+      >
+        <FileText className="mr-2 h-4 w-4" />
+        Cetak Penetapan
+      </Button>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -312,6 +321,35 @@ export function CetakPenetapan() {
                 </p>
               </div>
             )}
+
+            {/* Include Options */}
+            <div className="space-y-2">
+              <Label className="font-semibold">Include Options</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="includeAkIntegrasi"
+                  checked={includeAkIntegrasi}
+                  onCheckedChange={(checked) =>
+                    setIncludeAkIntegrasi(!!checked)
+                  }
+                />
+                <Label htmlFor="includeAkIntegrasi" className="cursor-pointer">
+                  Include AK Integrasi
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="includeAkPendidikan"
+                  checked={includeAkPendidikan}
+                  onCheckedChange={(checked) =>
+                    setIncludeAkPendidikan(!!checked)
+                  }
+                />
+                <Label htmlFor="includeAkPendidikan" className="cursor-pointer">
+                  Include AK Pendidikan
+                </Label>
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
@@ -320,14 +358,17 @@ export function CetakPenetapan() {
             </Button>
             <Button
               onClick={handleGeneratePDF}
-              disabled={selectedPeriodIds.length === 0}
+              disabled={
+                selectedPegawaiId.length === 0 ||
+                selectedPeriodIds.length === 0 ||
+                isGenerating
+              }
             >
-              <FileText className="mr-2 h-4 w-4" />
-              Generate PDF ({selectedPeriodIds.length} halaman)
+              {isGenerating ? "Memproses..." : "Cetak PDF"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

@@ -67,7 +67,12 @@ export function usePegawaiStorage() {
     async (id: string, data: Partial<Pegawai>) => {
       const updated = pegawai.map((p) =>
         p.id === id
-          ? { ...p, ...data, golongan: data.golongan ?? p.golongan, updatedAt: new Date().toISOString() }
+          ? {
+              ...p,
+              ...data,
+              golongan: data.golongan ?? p.golongan,
+              updatedAt: new Date().toISOString(),
+            }
           : p,
       );
       setPegawai(updated);
@@ -276,25 +281,28 @@ export function usePenilaianAngkaKreditStorage() {
   const [loading, setLoading] = useState(true);
 
   // Migration function to convert old predicate values to new ones
-  const migratePredicateValues = useCallback((data: PenilaianAngkaKredit[]): PenilaianAngkaKredit[] => {
-    const predicateMapping: Record<string, string> = {
-      'baik_sekali': 'sangat_baik',
-      'baik': 'baik',
-      'cukup': 'butuh_perbaikan',
-      'kurang': 'kurang',
-      'buruk': 'sangat_kurang'
-    };
+  const migratePredicateValues = useCallback(
+    (data: PenilaianAngkaKredit[]): PenilaianAngkaKredit[] => {
+      const predicateMapping: Record<string, string> = {
+        baik_sekali: "sangat_baik",
+        baik: "baik",
+        cukup: "butuh_perbaikan",
+        kurang: "kurang",
+        buruk: "sangat_kurang",
+      };
 
-    return data.map(item => {
-      if (predicateMapping[item.predikat]) {
-        return {
-          ...item,
-          predikat: predicateMapping[item.predikat] as any
-        };
-      }
-      return item;
-    });
-  }, []);
+      return data.map((item) => {
+        if (predicateMapping[item.predikat]) {
+          return {
+            ...item,
+            predikat: predicateMapping[item.predikat] as any,
+          };
+        }
+        return item;
+      });
+    },
+    [],
+  );
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -441,6 +449,7 @@ export function useAkPendidikanStorage() {
   const getTotalAkPendidikanByPegawai = useCallback(
     (pegawaiId: string) => {
       const items = akPendidikan.filter((ap) => ap.pegawaiId === pegawaiId);
+      // Sum up all calculated values (already based on MINIMAL_AK_MAPPING)
       return items.reduce((sum, item) => sum + item.calculated_value, 0);
     },
     [akPendidikan],

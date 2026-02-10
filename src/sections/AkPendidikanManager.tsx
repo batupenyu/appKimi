@@ -37,7 +37,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAkPendidikanStorage, usePegawaiStorage } from "@/hooks/useStorage";
-import { JENJANG_PENDIDIKAN_OPTIONS, calculateAkPendidikan } from "@/constants";
+import {
+  calculateAkPendidikan,
+  AK_TARGET_MAP,
+  MINIMAL_AK_MAPPING,
+  PANGKAT_NAMES,
+} from "@/utils/calculations";
 import type { AkPendidikan } from "@/types";
 import { toast } from "sonner";
 
@@ -46,17 +51,11 @@ const ITEMS_PER_PAGE = 10;
 interface AkPendidikanFormData {
   pegawaiId: string;
   nama_pendidikan: string;
-  jenjang: string;
-  tahun_lulus: number;
-  nilai_next_pangkat: number;
 }
 
 const INITIAL_FORM_DATA: AkPendidikanFormData = {
   pegawaiId: "",
   nama_pendidikan: "",
-  jenjang: "",
-  tahun_lulus: new Date().getFullYear(),
-  nilai_next_pangkat: 0,
 };
 
 export function AkPendidikanManager() {
@@ -86,13 +85,59 @@ export function AkPendidikanManager() {
     return map;
   }, [pegawai]);
 
-  // Calculate AK Pendidikan value based on selected jenjang
-  const calculatedValue = useMemo(() => {
-    if (formData.jenjang && formData.tahun_lulus) {
-      return calculateAkPendidikan(formData.jenjang, formData.tahun_lulus);
-    }
-    return 0;
-  }, [formData.jenjang, formData.tahun_lulus]);
+  // Get selected employee info
+  const selectedPegawai = useMemo(() => {
+    return formData.pegawaiId ? pegawaiMap.get(formData.pegawaiId) : null;
+  }, [formData.pegawaiId, pegawaiMap]);
+
+  // Calculate AK Pendidikan based on employee's golongongan using MINIMAL_AK_MAPPING
+  const { calculatedValue, nextPangkat, nextJenjang, jenjangMinimal } =
+    useMemo(() => {
+      if (!selectedPegawai?.golongan) {
+        return {
+          calculatedValue: 0,
+          nextPangkat: "-",
+          nextJenjang: "-",
+          jenjangMinimal: 0,
+        };
+      }
+
+      const golongongan = selectedPegawai.golongan;
+      const target = AK_TARGET_MAP[golongongan];
+
+      if (!target) {
+        return {
+          calculatedValue: 0,
+          nextPangkat: "-",
+          nextJenjang: "-",
+          jenjangMinimal: 0,
+        };
+      }
+
+      const mappingKey = `${golongongan}|${target.nextGolongan}`;
+      const customMapping = MINIMAL_AK_MAPPING[mappingKey];
+
+      let minimalJenjang = 0;
+      let jenjangName = "-";
+
+      if (customMapping && customMapping[1] !== null) {
+        minimalJenjang = customMapping[1];
+      } else if (target.nextJenjang) {
+        minimalJenjang = target.required;
+        jenjangName = target.nextJenjang;
+      }
+
+      const nextPangkatName =
+        PANGKAT_NAMES[target.nextGolongan] || target.nextGolongan;
+      const nextJenjangText = jenjangName || "-";
+
+      return {
+        calculatedValue: minimalJenjang * 0.25,
+        nextPangkat: `${nextPangkatName} (${target.nextGolongan})`,
+        nextJenjang: nextJenjangText,
+        jenjangMinimal: minimalJenjang,
+      };
+    }, [selectedPegawai]);
 
   // Filter and paginate
   const filteredData = useMemo(() => {
@@ -101,8 +146,7 @@ export function AkPendidikanManager() {
     return akPendidikan.filter(
       (item) =>
         pegawaiMap.get(item.pegawaiId)?.nama?.toLowerCase().includes(query) ||
-        item.nama_pendidikan.toLowerCase().includes(query) ||
-        item.jenjang.toLowerCase().includes(query),
+        item.nama_pendidikan.toLowerCase().includes(query),
     );
   }, [akPendidikan, searchQuery, pegawaiMap]);
 
@@ -111,18 +155,6 @@ export function AkPendidikanManager() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
-
-  const handleJenjangChange = (jenjang: string) => {
-    const option = JENJANG_PENDIDIKAN_OPTIONS.find(
-      (opt) => opt.value === jenjang,
-    );
-    const nilai = option?.nilai || 0;
-    setFormData({
-      ...formData,
-      jenjang,
-      nilai_next_pangkat: nilai,
-    });
-  };
 
   const handleAdd = () => {
     setFormData(INITIAL_FORM_DATA);
@@ -134,9 +166,6 @@ export function AkPendidikanManager() {
     setFormData({
       pegawaiId: item.pegawaiId,
       nama_pendidikan: item.nama_pendidikan,
-      jenjang: item.jenjang,
-      tahun_lulus: item.tahun_lulus,
-      nilai_next_pangkat: item.nilai_next_pangkat,
     });
     setIsEditDialogOpen(true);
   };
@@ -155,17 +184,13 @@ export function AkPendidikanManager() {
       toast.error("Nama pendidikan tidak boleh kosong");
       return;
     }
-    if (!formData.jenjang) {
-      toast.error("Pilih jenjang pendidikan");
-      return;
-    }
 
     addAkPendidikan({
       pegawaiId: formData.pegawaiId,
       nama_pendidikan: formData.nama_pendidikan,
-      jenjang: formData.jenjang,
-      tahun_lulus: formData.tahun_lulus,
-      nilai_next_pangkat: formData.nilai_next_pangkat,
+      jenjang: selectedPegawai?.golongan || "-",
+      tahun_lulus: 0,
+      nilai_next_pangkat: jenjangMinimal,
       calculated_value: calculatedValue,
     });
 
@@ -192,17 +217,13 @@ export function AkPendidikanManager() {
       toast.error("Nama pendidikan tidak boleh kosong");
       return;
     }
-    if (!formData.jenjang) {
-      toast.error("Pilih jenjang pendidikan");
-      return;
-    }
 
     updateAkPendidikan(selectedAkPendidikan.id, {
       pegawaiId: formData.pegawaiId,
       nama_pendidikan: formData.nama_pendidikan,
-      jenjang: formData.jenjang,
-      tahun_lulus: formData.tahun_lulus,
-      nilai_next_pangkat: formData.nilai_next_pangkat,
+      jenjang: selectedPegawai?.golongan || "-",
+      tahun_lulus: 0,
+      nilai_next_pangkat: jenjangMinimal,
       calculated_value: calculatedValue,
     });
 
@@ -241,6 +262,30 @@ export function AkPendidikanManager() {
         </Select>
       </div>
 
+      {/* Selected Employee Info */}
+      {selectedPegawai && (
+        <div className="p-4 bg-muted rounded-lg space-y-2">
+          <div className="text-sm font-medium">Informasi Pegawai</div>
+          <div className="text-sm">
+            Golongan Saat Ini:{" "}
+            <span className="font-semibold">{selectedPegawai.golongan}</span>
+          </div>
+          <div className="text-sm">
+            Pangkat:{" "}
+            <span className="font-semibold">
+              {PANGKAT_NAMES[selectedPegawai.golongan] || "-"}
+            </span>
+          </div>
+          <div className="text-sm">
+            Tujuan Pangkat: <span className="font-semibold">{nextPangkat}</span>
+          </div>
+          <div className="text-sm">
+            Jenjang Minimal:{" "}
+            <span className="font-semibold">{jenjangMinimal}</span>
+          </div>
+        </div>
+      )}
+
       {/* Nama Pendidikan */}
       <div className="space-y-2">
         <Label htmlFor="nama_pendidikan">Nama Pendidikan *</Label>
@@ -254,50 +299,13 @@ export function AkPendidikanManager() {
         />
       </div>
 
-      {/* Jenjang Pendidikan */}
-      <div className="space-y-2">
-        <Label htmlFor="jenjang">Jenjang Pendidikan *</Label>
-        <Select value={formData.jenjang} onValueChange={handleJenjangChange}>
-          <SelectTrigger>
-            <SelectValue placeholder="Pilih jenjang" />
-          </SelectTrigger>
-          <SelectContent>
-            {JENJANG_PENDIDIKAN_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label} (Nilai Next Pangkat: {option.nilai})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Tahun Lulus */}
-      <div className="space-y-2">
-        <Label htmlFor="tahun_lulus">Tahun Lulus *</Label>
-        <Input
-          id="tahun_lulus"
-          type="number"
-          value={formData.tahun_lulus}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              tahun_lulus: parseInt(e.target.value) || new Date().getFullYear(),
-            })
-          }
-          placeholder="Masukkan tahun lulus"
-          min={1900}
-          max={new Date().getFullYear()}
-        />
-      </div>
-
       {/* Calculated Value Display */}
       <div className="p-4 bg-muted rounded-lg">
         <div className="text-sm text-muted-foreground mb-1">
-          Nilai Next Pangkat: {formData.nilai_next_pangkat}
+          Jenjang Minimal: {jenjangMinimal}
         </div>
         <div className="text-lg font-semibold">
-          AK Pendidikan (25% × {formData.nilai_next_pangkat}) ={" "}
-          {calculatedValue.toFixed(2)}
+          AK Pendidikan (25% × {jenjangMinimal}) = {calculatedValue.toFixed(2)}
         </div>
       </div>
     </div>
@@ -376,9 +384,8 @@ export function AkPendidikanManager() {
               <TableHead>No</TableHead>
               <TableHead>Pegawai</TableHead>
               <TableHead>Nama Pendidikan</TableHead>
-              <TableHead>Jenjang</TableHead>
-              <TableHead>Tahun Lulus</TableHead>
-              <TableHead>Nilai Next Pangkat</TableHead>
+              <TableHead>Golongan</TableHead>
+              <TableHead>Jenjang Minimal</TableHead>
               <TableHead>AK Pendidikan</TableHead>
               <TableHead>Aksi</TableHead>
             </TableRow>
@@ -386,7 +393,7 @@ export function AkPendidikanManager() {
           <TableBody>
             {paginatedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
+                <TableCell colSpan={7} className="text-center py-8">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <GraduationCap className="h-8 w-8 text-muted-foreground" />
                     <p className="text-muted-foreground">
@@ -415,9 +422,10 @@ export function AkPendidikanManager() {
                   </TableCell>
                   <TableCell>{item.nama_pendidikan}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{item.jenjang}</Badge>
+                    <Badge variant="outline">
+                      {pegawaiMap.get(item.pegawaiId)?.golongan || "-"}
+                    </Badge>
                   </TableCell>
-                  <TableCell>{item.tahun_lulus}</TableCell>
                   <TableCell>{item.nilai_next_pangkat}</TableCell>
                   <TableCell className="font-medium">
                     {item.calculated_value.toFixed(2)}
@@ -482,7 +490,7 @@ export function AkPendidikanManager() {
           <DialogHeader>
             <DialogTitle>Tambah AK Pendidikan</DialogTitle>
             <DialogDescription>
-              Tambahkan data angka kredit pendidikan baru
+              Tambahkan data angka kredit pendidikan baru berdasarkan golongan
             </DialogDescription>
           </DialogHeader>
           {renderForm()}
@@ -501,7 +509,7 @@ export function AkPendidikanManager() {
           <DialogHeader>
             <DialogTitle>Edit AK Pendidikan</DialogTitle>
             <DialogDescription>
-              Perbarui data angka kredit pendidikan
+              Edit data angka kredit pendidikan
             </DialogDescription>
           </DialogHeader>
           {renderForm()}
@@ -526,27 +534,6 @@ export function AkPendidikanManager() {
               Apakah Anda yakin ingin menghapus data ini?
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            {selectedAkPendidikan && (
-              <div className="space-y-2">
-                <p>
-                  <strong>Pegawai:</strong>{" "}
-                  {pegawaiMap.get(selectedAkPendidikan.pegawaiId)?.nama || "-"}
-                </p>
-                <p>
-                  <strong>Pendidikan:</strong>{" "}
-                  {selectedAkPendidikan.nama_pendidikan}
-                </p>
-                <p>
-                  <strong>Jenjang:</strong> {selectedAkPendidikan.jenjang}
-                </p>
-                <p>
-                  <strong>AK Pendidikan:</strong>{" "}
-                  {selectedAkPendidikan.calculated_value.toFixed(2)}
-                </p>
-              </div>
-            )}
-          </div>
           <DialogFooter>
             <Button
               variant="outline"
