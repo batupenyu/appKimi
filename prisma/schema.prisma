@@ -1,0 +1,92 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Pegawai {
+  id             String   @id @default(uuid())
+  nama           String
+  nip            String   @unique
+  no_seri_karpeg String
+  tempat_lahir   String
+  tanggal_lahir  String
+  jenis_kelamin  String   // "Laki-laki" | "Perempuan"
+  pangkat        String
+  golongan     String
+  tmt_pangkat    String
+  jabatan        String
+  tmt_jabatan    String
+  unit_kerja     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  angkaIntegrasi       AngkaIntegrasi[]
+  penilaianAngkaKredit PenilaianAngkaKredit[]
+  akPendidikan         AkPendidikan[]
+}
+
+model AngkaIntegrasi {
+  id           String   @id @default(uuid())
+  pegawaiId    String
+  pegawaiNama  String
+  pegawaiNip   String
+  value        Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relation
+  pegawai Pegawai @relation(fields: [pegawaiId], references: [id])
+}
+
+model Instansi {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  penilaianAngkaKredit PenilaianAngkaKredit[]
+}
+
+model PenilaianAngkaKredit {
+  id                       String   @id @default(uuid())
+  pegawaiId                String
+  instansiId               String
+  penilaiId                String
+  jenjang                  String
+  predikat                 String
+  tanggalAwalPenilaian     String
+  tanggalAkhirPenilaian    String
+  tanggalDitetapkan        String
+  tempatDitetapkan         String
+  prosentase               Int
+  koefisien                Float
+  angkaKredit              Float
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  // Relations
+  pegawai  Pegawai  @relation(fields: [pegawaiId], references: [id])
+  instansi Instansi @relation(fields: [instansiId], references: [id])
+}
+
+model AkPendidikan {
+  id                String   @id @default(uuid())
+  pegawaiId         String
+  nama_pendidikan   String
+  jenjang           String
+  tahun_lulus       Int
+  nilai_next_pangkat Float
+  calculated_value  Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relation
+  pegawai Pegawai @relation(fields: [pegawaiId], references: [id])
+}

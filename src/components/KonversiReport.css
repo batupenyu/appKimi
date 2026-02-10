@@ -1,0 +1,290 @@
+/* KonversiReport.css */
+
+.konversi-card {
+  font-family: Arial, sans-serif;
+}
+
+.konversi-card-body {
+  padding: 1rem;
+}
+
+.report-content {
+  font-size: 11pt;
+  font-family: Arial, sans-serif;
+  line-height: 1.2;
+}
+
+.font-bold {
+  font-weight: bold;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* Header Section */
+.header-center {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.header-center .title {
+  margin-bottom: 4px;
+}
+
+.header-center .subtitle {
+  font-size: 11pt;
+}
+
+/* Header Table */
+.header-table {
+  width: 100%;
+  border: none;
+  font-size: 11pt;
+  margin-bottom: 16px;
+}
+
+.header-table td {
+  border: none;
+  padding: 2px 4px;
+}
+
+/* Personal Table */
+.personal-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.personal-table thead th {
+  border: 1px solid black;
+  border-bottom: 2px solid black;
+  padding: 4px 6px;
+  text-align: center;
+  vertical-align: middle;
+  font-weight: bold;
+}
+
+.personal-table tbody td {
+  padding: 4px 6px;
+  vertical-align: middle;
+  text-align: left;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+}
+
+.personal-table .number-cell {
+  width: 5%;
+  text-align: center;
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+}
+
+.personal-table .label-cell {
+  width: 30%;
+  border-right: none;
+}
+
+.personal-table .colon-merged {
+  width: 30px;
+  text-align: center;
+  padding: 4px 2px;
+  border-left: none;
+  border-right: none;
+}
+
+.personal-table .value-cell {
+  width: 63%;
+  border-left: none;
+  border-right: 1px solid black;
+}
+
+/* Credit Table */
+.credit-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  table-layout: fixed;
+}
+
+.credit-table th,
+.credit-table td {
+  border: 1px solid black;
+  padding: 4px 6px;
+  vertical-align: middle;
+  text-align: center;
+  word-wrap: break-word;
+}
+
+.credit-table thead tr:first-child th {
+  border-bottom: 2px solid black;
+}
+
+/* Footer Table */
+.footer-table {
+  width: 100%;
+  border: none;
+  border-collapse: collapse;
+}
+
+.footer-left {
+  width: 60%;
+  vertical-align: top;
+}
+
+.footer-right {
+  width: 40%;
+  vertical-align: top;
+}
+
+.footer-right-content {
+  text-align: left;
+}
+
+.footer-text {
+  margin: 0 0 8px 0;
+}
+
+.footer-text.no-margin {
+  margin: 0;
+}
+
+.signature-title {
+  margin-top: 10px;
+}
+
+.signature-block {
+  margin-top: 40px;
+}
+
+/* Print Styles */
+@media print {
+  .konversi-card {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide UI elements that shouldn't appear in print */
+  .fa,
+  .fas,
+  .far,
+  .fal,
+  .fad,
+  .fab,
+  button,
+  .btn,
+  .dialog-footer,
+  .select-trigger,
+  .select-content,
+  .input,
+  .label,
+  .card-header,
+  .badge,
+  .pagination,
+  .search-box,
+  .action-buttons,
+  .sidebar,
+  .nav,
+  .header-actions {
+    display: none !important;
+  }
+
+  /* Ensure clean table borders for printing */
+  table {
+    border-collapse: collapse;
+  }
+
+  /* Remove shadows and backgrounds for cleaner print */
+  .konversi-card,
+  .konversi-card-body {
+    box-shadow: none !important;
+    background: white !important;
+  }
+
+  /* Ensure readable fonts for printing */
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* PDF Generation Specific Styles */
+.pdf-container {
+  font-family: Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.2;
+  width: 210mm; /* A4 width */
+  margin: 0 auto;
+  padding: 30px;
+  box-sizing: border-box;
+  color: black !important;
+  background: white !important;
+}
+
+.pdf-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pdf-container th,
+.pdf-container td {
+  border: 1px solid #000;
+  padding: 4px 6px;
+  vertical-align: top;
+  text-align: left;
+  color: black !important;
+  background: white !important;
+}
+
+.pdf-container th {
+  font-weight: bold;
+  text-align: center;
+}
+
+.pdf-container .number-cell {
+  width: 5%;
+  text-align: center;
+}
+
+.pdf-container .label-cell {
+  width: 30%;
+}
+
+.pdf-container .colon-merged {
+  width: 30px;
+  text-align: center;
+}
+
+.pdf-container .value-cell {
+  width: 63%;
+}
+
+.pdf-container .credit-table th,
+.pdf-container .credit-table td {
+  text-align: center;
+}
+
+.pdf-container .credit-table .text-right {
+  text-align: right;
+}
+
+.pdf-container .footer-left {
+  width: 60%;
+  vertical-align: top;
+}
+
+.pdf-container .footer-right {
+  width: 40%;
+  vertical-align: top;
+}
+
+/* Force visibility and colors for PDF generation */
+.pdf-container *,
+.pdf-container *::before,
+.pdf-container *::after {
+  color: black !important;
+  background: white !important;
+  visibility: visible !important;
+  display: block !important;
+}
