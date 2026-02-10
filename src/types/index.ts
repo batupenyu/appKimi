@@ -43,8 +43,7 @@ export type ViewState =
   | "instansi"
   | "ak-pendidikan"
   | "cetak-akumulasi"
-  | "cetak-penetapan"
-  | "konversi-report";
+  | "cetak-penetapan";
 
 // Constants for Pangkat dan golongan
 export const PANGKAT_OPTIONS: Record<string, string> = {

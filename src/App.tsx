@@ -21,16 +21,10 @@ import { InstansiManager } from "@/sections/InstansiManager";
 import { AkPendidikanManager } from "@/sections/AkPendidikanManager";
 import { CetakAkumulasi } from "@/components/CetakAkumulasi";
 import { CetakPenetapan } from "@/components/CetakPenetapan";
-import { CetakKonversi } from "@/components/CetakKonversi";
 import type { ViewState } from "@/types";
 
 const navigation = [
   { name: "Dashboard", icon: LayoutDashboard, view: "dashboard" as ViewState },
-  {
-    name: "Konversi Report",
-    icon: FileText,
-    view: "konversi-report" as ViewState,
-  },
   { name: "Pegawai", icon: Users, view: "pegawai" as ViewState },
   {
     name: "Angka Integrasi",
@@ -184,8 +178,6 @@ function MainContent({ view }: { view: ViewState }) {
       return <CetakPenetapan />;
     case "instansi":
       return <InstansiManager />;
-    case "konversi-report":
-      return <CetakKonversi />;
     default:
       return <Dashboard />;
   }

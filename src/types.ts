@@ -68,7 +68,6 @@ export interface AkPendidikan {
 // Additional types needed by the application
 export type ViewState =
   | "dashboard"
-  | "konversi-report"
   | "pegawai"
   | "angka-integrasi"
   | "ak-pendidikan"

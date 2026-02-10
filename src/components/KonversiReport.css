@@ -104,7 +104,6 @@
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 16px;
-  table-layout: fixed;
 }
 
 .credit-table th,

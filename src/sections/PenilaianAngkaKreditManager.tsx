@@ -7,6 +7,7 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -36,14 +38,15 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { pdf, Document } from "@react-pdf/renderer";
+import { KonversiReportPage } from "@/components/ui/KonversiReportPDF";
 import {
   usePenilaianAngkaKreditStorage,
   usePegawaiStorage,
   useInstansiStorage,
+  useAngkaIntegrasiStorage,
+  useAkPendidikanStorage,
 } from "@/hooks/useStorage";
-import { CetakKonversi } from "@/components/CetakKonversi";
-import { CetakKonversiMulti } from "@/components/CetakKonversiMulti";
-import { CetakKonversiDetail } from "@/components/CetakKonversiDetail";
 import {
   JENJANG_OPTIONS,
   PENILAIAN_OPTIONS,
@@ -84,6 +87,8 @@ export function PenilaianAngkaKreditManager() {
     usePenilaianAngkaKreditStorage();
   const { pegawai } = usePegawaiStorage();
   const { instansi } = useInstansiStorage();
+  const { angkaIntegrasi } = useAngkaIntegrasiStorage();
+  const { getTotalAkPendidikanByPegawai } = useAkPendidikanStorage();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,6 +99,12 @@ export function PenilaianAngkaKreditManager() {
     (typeof penilaianAK)[0] | null
   >(null);
   const [isCetakMultiDialogOpen, setIsCetakMultiDialogOpen] = useState(false);
+  const [selectedPegawaiIds, setSelectedPegawaiIds] = useState<string[]>([]);
+  const [selectedPeriodIds, setSelectedPeriodIds] = useState<string[]>([]);
+  const [includeAkIntegrasi, setIncludeAkIntegrasi] = useState<boolean>(false);
+  const [includeAkPendidikan, setIncludeAkPendidikan] =
+    useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] =
     useState<PenilaianFormData>(INITIAL_FORM_DATA);
 
@@ -310,6 +321,175 @@ export function PenilaianAngkaKreditManager() {
     toast.success("Semua angka kredit telah dihitung ulang");
   };
 
+  // Multi-print handlers
+  const handleOpenCetakMultiDialog = () => {
+    if (penilaianAK.length === 0) {
+      toast.error("Tidak ada data untuk dicetak");
+      return;
+    }
+    setSelectedPegawaiIds([]);
+    setSelectedPeriodIds([]);
+    setIncludeAkIntegrasi(false);
+    setIncludeAkPendidikan(false);
+    setIsCetakMultiDialogOpen(true);
+  };
+
+  // Get unique employees with penilaian
+  const employeesWithPenilaian = useMemo(() => {
+    const uniquePegawaiIds = new Set(penilaianAK.map((p) => p.pegawaiId));
+    return pegawai.filter((p) => uniquePegawaiIds.has(p.id));
+  }, [penilaianAK, pegawai]);
+
+  // Get all periods for selected employees
+  const employeePeriods = useMemo(() => {
+    if (!selectedPegawaiIds.length) return [];
+    return penilaianAK
+      .filter((p) => selectedPegawaiIds.includes(p.pegawaiId))
+      .sort(
+        (a, b) =>
+          new Date(b.tanggalAkhirPenilaian).getTime() -
+          new Date(a.tanggalAkhirPenilaian).getTime(),
+      );
+  }, [penilaianAK, selectedPegawaiIds]);
+
+  const togglePegawai = (id: string) => {
+    setSelectedPegawaiIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
+  };
+
+  const toggleAllPegawai = () => {
+    if (selectedPegawaiIds.length === employeesWithPenilaian.length) {
+      setSelectedPegawaiIds([]);
+    } else {
+      setSelectedPegawaiIds(employeesWithPenilaian.map((p) => p.id));
+    }
+  };
+
+  const toggleAllPeriods = () => {
+    if (selectedPeriodIds.length === employeePeriods.length) {
+      setSelectedPeriodIds([]);
+    } else {
+      setSelectedPeriodIds(employeePeriods.map((p) => p.id));
+    }
+  };
+
+  const togglePeriod = (id: string) => {
+    setSelectedPeriodIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
+  };
+
+  const handleGenerateMultiPDF = async () => {
+    if (selectedPeriodIds.length === 0) {
+      toast.error("Pilih setidaknya 1 periode untuk dicetak");
+      return;
+    }
+
+    setIsCetakMultiDialogOpen(false);
+    setIsGenerating(true);
+
+    try {
+      const selectedPenilaianList = employeePeriods.filter((p) =>
+        selectedPeriodIds.includes(p.id),
+      );
+
+      const doc = (
+        <Document>
+          {selectedPenilaianList.map((penilaian) => {
+            const selectedEmployee = pegawaiMap.get(penilaian.pegawaiId);
+            const employeeInstansi = instansi.find(
+              (i) => i.id === penilaian.instansiId,
+            );
+            const penilai = pegawai.find((p) => p.id === penilaian.penilaiId);
+
+            // Get AK Integrasi for this employee
+            const employeeAkIntegrasi = angkaIntegrasi.find(
+              (ai) => ai.pegawaiId === penilaian.pegawaiId,
+            );
+            const akIntegrasiValue =
+              includeAkIntegrasi && employeeAkIntegrasi
+                ? employeeAkIntegrasi.value
+                : 0;
+
+            // Get AK Pendidikan for this employee
+            const akPendidikanValue = includeAkPendidikan
+              ? getTotalAkPendidikanByPegawai(penilaian.pegawaiId)
+              : 0;
+
+            // Total AK including integrasi and pendidikan
+            const totalAngkaKredit =
+              penilaian.angkaKredit + akIntegrasiValue + akPendidikanValue;
+
+            return (
+              <KonversiReportPage
+                key={penilaian.id}
+                nomor={penilaian.id.slice(0, 8).toUpperCase()}
+                tahun={new Date(penilaian.tanggalAkhirPenilaian).getFullYear()}
+                namaInstansi={employeeInstansi?.name || "Instansi"}
+                periodeAwal={penilaian.tanggalAwalPenilaian}
+                periodeAkhir={penilaian.tanggalAkhirPenilaian}
+                pegawai={{
+                  nama: selectedEmployee?.nama || "-",
+                  nip: selectedEmployee?.nip || "-",
+                  noSeriKarpeg: selectedEmployee?.no_seri_karpeg || "-",
+                  tempatLahir: selectedEmployee?.tempat_lahir || "-",
+                  tanggalLahir: selectedEmployee?.tanggal_lahir || "-",
+                  jenisKelamin: selectedEmployee?.jenis_kelamin || "-",
+                  pangkat: selectedEmployee?.pangkat || "-",
+                  golongan: selectedEmployee?.golongan || "-",
+                  tmtPangkat: selectedEmployee?.tmt_pangkat || "-",
+                  unitKerja: selectedEmployee?.unit_kerja || "-",
+                }}
+                jabatanDanTmt={`${selectedEmployee?.jabatan || "-"} / ${selectedEmployee?.tmt_jabatan || "-"}`}
+                includeAngkaIntegrasi={akIntegrasiValue > 0}
+                angkaIntegrasiValue={akIntegrasiValue}
+                includeAkPendidikan={akPendidikanValue > 0}
+                akPendidikanValue={akPendidikanValue}
+                akList={[
+                  {
+                    penilaian: penilaian.predikat,
+                    prosentase: penilaian.prosentase || 0,
+                    koefisien: penilaian.koefisien || 0,
+                    jumlahAngkaKredit: penilaian.angkaKredit,
+                  },
+                ]}
+                totalAngkaKredit={totalAngkaKredit}
+                tempatDitetapkan={penilaian.tempatDitetapkan}
+                tanggalDitetapkan={penilaian.tanggalDitetapkan}
+                penilai={{
+                  nama: penilai?.nama || "-",
+                  pangkat: penilai?.pangkat || "-",
+                  golongan: penilai?.golongan || "-",
+                  nip: penilai?.nip || "-",
+                }}
+              />
+            );
+          })}
+        </Document>
+      );
+
+      const blob = await pdf(doc).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `konversi-angka-kredit-${selectedPeriodIds.length}-periode.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(
+        `PDF berhasil dibuat untuk ${selectedPeriodIds.length} periode`,
+      );
+      setSelectedPegawaiIds([]);
+      setSelectedPeriodIds([]);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Terjadi kesalahan saat membuat PDF. Silakan coba lagi.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const renderForm = () => (
     <div className="space-y-4">
       {/* Pegawai Selection */}
@@ -433,7 +613,8 @@ export function PenilaianAngkaKreditManager() {
           <SelectContent>
             {PENILAIAN_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label} ({(PENILAIAN_TO_PROSENTASE as any)[option.value]}%)
+                {option.label} ({(PENILAIAN_TO_PROSENTASE as any)[option.value]}
+                %)
               </SelectItem>
             ))}
           </SelectContent>
@@ -537,18 +718,23 @@ export function PenilaianAngkaKreditManager() {
               Buat Angka Kredit
             </CardTitle>
           </div>
-          <Button
-            onClick={handleAdd}
-            disabled={pegawai.length === 0 || instansi.length === 0}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Tambah Penilaian
-          </Button>
-          <CetakKonversiMulti
-            penilaianList={penilaianAK}
-            pegawaiList={pegawai}
-            instansiList={instansi}
-          />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleOpenCetakMultiDialog}
+              disabled={penilaianAK.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Cetak Multi PDF
+            </Button>
+            <Button
+              onClick={handleAdd}
+              disabled={pegawai.length === 0 || instansi.length === 0}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Tambah Penilaian
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 mb-4">
@@ -626,8 +812,12 @@ export function PenilaianAngkaKreditManager() {
                       </TableCell>
                       <TableCell>{item.jenjang}</TableCell>
                       <TableCell>{item.predikat}</TableCell>
-                      <TableCell className="text-right">{item.prosentase}%</TableCell>
-                      <TableCell className="text-right">{item.koefisien}</TableCell>
+                      <TableCell className="text-right">
+                        {item.prosentase}%
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {item.koefisien}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Badge variant="default" className="font-mono">
                           {item.angkaKredit.toFixed(2)}
@@ -635,14 +825,6 @@ export function PenilaianAngkaKreditManager() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <CetakKonversiDetail
-                            penilaian={item}
-                            pegawai={pegawaiMap.get(item.pegawaiId)!}
-                            instansi={instansi.find(
-                              (i) => i.id === item.instansiId,
-                            )}
-                            penilai={pegawaiMap.get(item.penilaiId)}
-                          />
                           <Button
                             variant="ghost"
                             size="icon"
@@ -755,6 +937,152 @@ export function PenilaianAngkaKreditManager() {
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
               Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Multi-print Dialog */}
+      <Dialog
+        open={isCetakMultiDialogOpen}
+        onOpenChange={setIsCetakMultiDialogOpen}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Cetak Multi PDF Konversi Angka Kredit</DialogTitle>
+            <DialogDescription>
+              Pilih pegawai dan periode yang akan dicetak dalam PDF
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Employee Selection */}
+            <div className="space-y-2">
+              <Label className="font-semibold">Pilih Pegawai</Label>
+              <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                {employeesWithPenilaian.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">
+                    Tidak ada pegawai dengan penilaian
+                  </p>
+                ) : (
+                  employeesWithPenilaian
+                    .sort((a, b) => a.nama.localeCompare(b.nama))
+                    .map((p) => (
+                      <div key={p.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`pegawai-${p.id}`}
+                          checked={selectedPegawaiIds.includes(p.id)}
+                          onCheckedChange={() => togglePegawai(p.id)}
+                        />
+                        <Label
+                          htmlFor={`pegawai-${p.id}`}
+                          className="cursor-pointer"
+                        >
+                          {p.nama} ({p.nip})
+                        </Label>
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
+
+            {/* Period Selection (only show if employee selected) */}
+            {selectedPegawaiIds.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="font-semibold">Pilih Periode</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleAllPeriods}
+                  >
+                    {selectedPeriodIds.length === employeePeriods.length
+                      ? "Unselect All"
+                      : "Select All"}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border rounded p-2">
+                  {employeePeriods.map((pn) => (
+                    <div key={pn.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`periode-${pn.id}`}
+                        checked={selectedPeriodIds.includes(pn.id)}
+                        onCheckedChange={() => togglePeriod(pn.id)}
+                      />
+                      <Label
+                        htmlFor={`periode-${pn.id}`}
+                        className="cursor-pointer flex-1"
+                      >
+                        <span className="font-medium">
+                          {pn.tanggalAwalPenilaian} s.d.{" "}
+                          {pn.tanggalAkhirPenilaian}
+                        </span>
+                        <span className="text-muted-foreground ml-2">
+                          ({pn.predikat} - {pn.angkaKredit.toFixed(2)} AK)
+                        </span>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Selected: <strong>{selectedPeriodIds.length}</strong> of{" "}
+                  {employeePeriods.length} periods
+                </p>
+              </div>
+            )}
+
+            {/* AK Options */}
+            <div className="space-y-2">
+              <Label className="font-semibold">Opsi Angka Kredit</Label>
+              <div className="grid grid-cols-2 gap-4 border rounded p-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="include-ak-integrasi"
+                    checked={includeAkIntegrasi}
+                    onCheckedChange={(checked) =>
+                      setIncludeAkIntegrasi(checked === true)
+                    }
+                  />
+                  <Label
+                    htmlFor="include-ak-integrasi"
+                    className="cursor-pointer"
+                  >
+                    Sertakan AK Integrasi
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="include-ak-pendidikan"
+                    checked={includeAkPendidikan}
+                    onCheckedChange={(checked) =>
+                      setIncludeAkPendidikan(checked === true)
+                    }
+                  />
+                  <Label
+                    htmlFor="include-ak-pendidikan"
+                    className="cursor-pointer"
+                  >
+                    Sertakan AK Pendidikan
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCetakMultiDialogOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleGenerateMultiPDF}
+              disabled={selectedPeriodIds.length === 0 || isGenerating}
+            >
+              {isGenerating
+                ? "Membuat PDF..."
+                : `Generate PDF (${selectedPeriodIds.length} halaman)`}
             </Button>
           </DialogFooter>
         </DialogContent>

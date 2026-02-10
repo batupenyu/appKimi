@@ -1,4 +1,46 @@
-import type { ReportData } from "@/components/CetakKonversiDetailWithPDF";
+// Define the ReportData type that was previously imported
+type ReportData = {
+  nomor: string;
+  tahun: number;
+  namaInstansi: string;
+  periodeAwal: string;
+  periodeAkhir: string;
+  pegawai: {
+    nama: string;
+    nip: string;
+    noSeriKarpeg: string;
+    tempatLahir: string;
+    tanggalLahir: string;
+    jenisKelamin: string;
+    pangkat: string;
+    golongan: string;
+    tmtPangkat: string;
+    unitKerja: string;
+  };
+  jabatanDanTmt: string;
+  includeAngkaIntegrasi: boolean;
+  angkaIntegrasiValue: number;
+  includeAkPendidikan: boolean;
+  akPendidikanValue: number;
+  akList: Array<{
+    penilaian: string;
+    prosentase: number;
+    koefisien: number;
+    jumlahAngkaKredit: number;
+  }>;
+  totalAngkaKredit: number;
+  tempatDitetapkan: string;
+  tanggalDitetapkan: string;
+  penilai: {
+    nama: string;
+    pangkat: string;
+    golongan: string;
+    nip: string;
+  };
+  nextRank?: string;
+  nextJenjang?: string;
+  sisaAngkaKredit?: number;
+};
 
 /**
  * Generates a PDF using Puppeteer

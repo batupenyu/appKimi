@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
 // Reusable Page Component
 export const KonversiReportPage: React.FC<KonversiReportPDFProps> = (props) => {
   const {
-    nomor = ".........",
+    nomor,
     tahun,
     namaInstansi,
     periodeAwal,
@@ -157,309 +157,385 @@ export const KonversiReportPage: React.FC<KonversiReportPDFProps> = (props) => {
   };
 
   return (
-  <Page size="A4" style={styles.page}>
-    {/* Title */}
-    <Text style={styles.title}>KONVERSI KE ANGKA KREDIT</Text>
-    <Text style={styles.subtitle}>
-      NOMOR : 800/ {nomor} /.........../Dindik/ {getPeriodeYear()}/PAK
-    </Text>
-
-    {/* Header Info */}
-    <View style={styles.headerRow}>
-      <Text>Instansi: {namaInstansi}</Text>
-      <Text>
-        Periode : {formatDateDDMMYYYY(periodeAwal)} s.d. {formatDateDDMMYYYY(periodeAkhir)}
+    <Page size="A4" style={styles.page}>
+      {/* Title */}
+      <Text style={styles.title}>KONVERSI KE ANGKA KREDIT</Text>
+      <Text style={styles.subtitle}>
+        NOMOR : 800/ {nomor || "........."} /.........../Dindik/{" "}
+        {getPeriodeYear()}/PAK
       </Text>
-    </View>
 
-    {/* Personal Information Table */}
-    <View style={styles.table}>
-      <View style={styles.tableHeader}>
-        <Text
-          style={[styles.tableCellBold, { width: "5%", textAlign: "center" }]}
-        >
-          I.
-        </Text>
-        <Text style={[styles.tableCellBold, { width: "95%" }]}>
-          KETERANGAN PERORANGAN
-        </Text>
-      </View>
-
-      <View style={styles.tableRow}>
-        <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>
-          1.
-        </Text>
-        <Text style={[styles.tableCell, { width: "30%" }]}>Nama</Text>
-        <Text style={[styles.tableCell, { width: "2%", textAlign: "center" }]}>
-          :
-        </Text>
-        <Text style={[styles.tableCell, { width: "63%" }]}>{pegawai.nama}</Text>
-      </View>
-
-      <View style={styles.tableRow}>
-        <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>
-          2.
-        </Text>
-        <Text style={[styles.tableCell, { width: "30%" }]}>NIP</Text>
-        <Text style={[styles.tableCell, { width: "2%", textAlign: "center" }]}>
-          :
-        </Text>
-        <Text style={[styles.tableCell, { width: "63%" }]}>{pegawai.nip}</Text>
-      </View>
-
-      <View style={styles.tableRow}>
-        <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>
-          3.
-        </Text>
-        <Text style={[styles.tableCell, { width: "30%" }]}>
-          No. Seri Karpeg
-        </Text>
-        <Text style={[styles.tableCell, { width: "2%", textAlign: "center" }]}>
-          :
-        </Text>
-        <Text style={[styles.tableCell, { width: "63%" }]}>
-          {pegawai.noSeriKarpeg}
-        </Text>
-      </View>
-
-      <View style={styles.tableRow}>
-        <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>
-          4.
-        </Text>
-        <Text style={[styles.tableCell, { width: "30%" }]}>
-          Tempat Tgl. Lahir
-        </Text>
-        <Text style={[styles.tableCell, { width: "2%", textAlign: "center" }]}>
-          :
-        </Text>
-        <Text style={[styles.tableCell, { width: "63%" }]}>
-          {pegawai.tempatLahir}, {pegawai.tanggalLahir}
-        </Text>
-      </View>
-
-      <View style={styles.tableRow}>
-        <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>
-          5.
-        </Text>
-        <Text style={[styles.tableCell, { width: "30%" }]}>Jenis Kelamin</Text>
-        <Text style={[styles.tableCell, { width: "2%", textAlign: "center" }]}>
-          :
-        </Text>
-        <Text style={[styles.tableCell, { width: "63%" }]}>
-          {pegawai.jenisKelamin}
-        </Text>
-      </View>
-
-      <View style={styles.tableRow}>
-        <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>
-          6.
-        </Text>
-        <Text style={[styles.tableCell, { width: "30%" }]}>
-          Pangkat/Gol.Ruang/Gol/TMT
-        </Text>
-        <Text style={[styles.tableCell, { width: "2%", textAlign: "center" }]}>
-          :
-        </Text>
-        <Text style={[styles.tableCell, { width: "63%" }]}>
-          {pegawai.pangkat}, {pegawai.golongan}, {pegawai.tmtPangkat}
-        </Text>
-      </View>
-
-      <View style={styles.tableRow}>
-        <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>
-          7.
-        </Text>
-        <Text style={[styles.tableCell, { width: "30%" }]}>Jabatan /TMT</Text>
-        <Text style={[styles.tableCell, { width: "2%", textAlign: "center" }]}>
-          :
-        </Text>
-        <Text style={[styles.tableCell, { width: "63%" }]}>
-          {jabatanDanTmt}
-        </Text>
-      </View>
-
-      <View style={styles.tableRow}>
-        <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>
-          8.
-        </Text>
-        <Text style={[styles.tableCell, { width: "30%" }]}>Unit Kerja</Text>
-        <Text style={[styles.tableCell, { width: "2%", textAlign: "center" }]}>
-          :
-        </Text>
-        <Text style={[styles.tableCell, { width: "63%" }]}>
-          {pegawai.unitKerja}
-        </Text>
-      </View>
-
-      <View style={styles.tableRow}>
-        <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>
-          9.
-        </Text>
-        <Text style={[styles.tableCell, { width: "30%" }]}>Instansi</Text>
-        <Text style={[styles.tableCell, { width: "2%", textAlign: "center" }]}>
-          :
-        </Text>
-        <Text style={[styles.tableCell, { width: "63%" }]}>{namaInstansi}</Text>
-      </View>
-    </View>
-
-    {/* Credit Table */}
-    <View style={styles.table}>
-      <View style={styles.tableHeader}>
-        <Text
-          style={[styles.tableCellBold, { width: "100%", textAlign: "center" }]}
-        >
-          KONVERSI KE ANGKA KREDIT
-        </Text>
-      </View>
-
-      <View style={[styles.tableRow, { borderTopWidth: 1 }]}>
-        <Text
-          style={[styles.tableCellBold, { width: "35%", textAlign: "center" }]}
-        >
-          PREDIKAT
-        </Text>
-        <Text
-          style={[styles.tableCellBold, { width: "20%", textAlign: "center" }]}
-        >
-          PROSENTASE
-        </Text>
-        <Text
-          style={[styles.tableCellBold, { width: "20%", textAlign: "center" }]}
-        >
-          KOEFISIEN PER TAHUN
-        </Text>
-        <Text
-          style={[styles.tableCellBold, { width: "25%", textAlign: "center" }]}
-        >
-          ANGKA KREDIT YANG DI DAPAT
-        </Text>
-      </View>
-
-      {includeAngkaIntegrasi && angkaIntegrasiValue > 0 && (
-        <View style={styles.tableRow}>
-          <Text
-            style={[styles.tableCell, { width: "35%", textAlign: "center" }]}
-          >
-            AK Integrasi
-          </Text>
-          <Text
-            style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
-          >
-            .
-          </Text>
-          <Text
-            style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
-          >
-            .
-          </Text>
-          <Text
-            style={[styles.tableCell, { width: "25%", textAlign: "center" }]}
-          >
-            {angkaIntegrasiValue.toFixed(2)}
-          </Text>
-        </View>
-      )}
-
-      {includeAkPendidikan && akPendidikanValue > 0 && (
-        <View style={styles.tableRow}>
-          <Text
-            style={[styles.tableCell, { width: "35%", textAlign: "center" }]}
-          >
-            AK Pendidikan
-          </Text>
-          <Text
-            style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
-          >
-            .
-          </Text>
-          <Text
-            style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
-          >
-            .
-          </Text>
-          <Text
-            style={[styles.tableCell, { width: "25%", textAlign: "center" }]}
-          >
-            {akPendidikanValue.toFixed(2)}
-          </Text>
-        </View>
-      )}
-
-      {akList.map((akItem, index) => (
-        <View key={index} style={styles.tableRow}>
-          <Text
-            style={[styles.tableCell, { width: "35%", textAlign: "center" }]}
-          >
-            {akItem.penilaian}
-          </Text>
-          <Text
-            style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
-          >
-            {akItem.prosentase}%
-          </Text>
-          <Text
-            style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
-          >
-            {akItem.koefisien}
-          </Text>
-          <Text
-            style={[styles.tableCell, { width: "25%", textAlign: "center" }]}
-          >
-            {akItem.jumlahAngkaKredit.toFixed(2)}
-          </Text>
-        </View>
-      ))}
-
-      <View style={styles.tableRow}>
-        <Text
-          style={[
-            styles.tableCellBold,
-            { width: "75%", textAlign: "right", paddingRight: 8 },
-          ]}
-        >
-          Jumlah Angka Kredit
-        </Text>
-        <Text
-          style={[styles.tableCellBold, { width: "25%", textAlign: "center" }]}
-        >
-          {totalAngkaKredit.toFixed(2)}
-        </Text>
-      </View>
-    </View>
-
-    {/* Footer */}
-    <View style={styles.footer}>
-      <View style={styles.footerLeft}>
-        <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
-          ASLI disampaikan dengan hormat kepada:
-        </Text>
-        <Text style={{ marginBottom: 10 }}>
-          Jabatan Fungsional yang bersangkutan.
-        </Text>
-
-        <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
-          Tembusan disampaikan kepada:
-        </Text>
-        <Text>1. Jabatan Fungsional yang bersangkutan</Text>
-        <Text>2. Ketua/atasan unit kerja</Text>
-        <Text>3. Kepala Biro Kepegawaian dan Organisasi</Text>
-        <Text>4. Pejabat lain yang dianggap perlu.</Text>
-      </View>
-
-      <View style={styles.footerRight}>
-        <Text>Ditetapkan di {tempatDitetapkan}</Text>
-        <Text>Pada tanggal, {tanggalDitetapkan}.</Text>
-        <Text style={{ marginTop: 10 }}>Pejabat Penilai Kinerja</Text>
-        <Text style={{ marginTop: 30 }}>{penilai.nama}</Text>
+      {/* Header Info */}
+      <View style={styles.headerRow}>
+        <Text>Instansi: {namaInstansi}</Text>
         <Text>
-          {penilai.pangkat}, {penilai.golongan}
+          Periode : {formatDateDDMMYYYY(periodeAwal)} s.d.{" "}
+          {formatDateDDMMYYYY(periodeAkhir)}
         </Text>
-        <Text>NIP. {penilai.nip}</Text>
       </View>
-    </View>
-  </Page>
-);
+
+      {/* Personal Information Table */}
+      <View style={styles.table}>
+        <View style={styles.tableHeader}>
+          <Text
+            style={[styles.tableCellBold, { width: "5%", textAlign: "center" }]}
+          >
+            I.
+          </Text>
+          <Text style={[styles.tableCellBold, { width: "95%" }]}>
+            KETERANGAN PERORANGAN
+          </Text>
+        </View>
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[styles.tableCell, { width: "5%", textAlign: "center" }]}
+          >
+            1.
+          </Text>
+          <Text style={[styles.tableCell, { width: "30%" }]}>Nama</Text>
+          <Text
+            style={[styles.tableCell, { width: "2%", textAlign: "center" }]}
+          >
+            :
+          </Text>
+          <Text style={[styles.tableCell, { width: "63%" }]}>
+            {pegawai.nama}
+          </Text>
+        </View>
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[styles.tableCell, { width: "5%", textAlign: "center" }]}
+          >
+            2.
+          </Text>
+          <Text style={[styles.tableCell, { width: "30%" }]}>NIP</Text>
+          <Text
+            style={[styles.tableCell, { width: "2%", textAlign: "center" }]}
+          >
+            :
+          </Text>
+          <Text style={[styles.tableCell, { width: "63%" }]}>
+            {pegawai.nip}
+          </Text>
+        </View>
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[styles.tableCell, { width: "5%", textAlign: "center" }]}
+          >
+            3.
+          </Text>
+          <Text style={[styles.tableCell, { width: "30%" }]}>
+            No. Seri Karpeg
+          </Text>
+          <Text
+            style={[styles.tableCell, { width: "2%", textAlign: "center" }]}
+          >
+            :
+          </Text>
+          <Text style={[styles.tableCell, { width: "63%" }]}>
+            {pegawai.noSeriKarpeg}
+          </Text>
+        </View>
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[styles.tableCell, { width: "5%", textAlign: "center" }]}
+          >
+            4.
+          </Text>
+          <Text style={[styles.tableCell, { width: "30%" }]}>
+            Tempat Tgl. Lahir
+          </Text>
+          <Text
+            style={[styles.tableCell, { width: "2%", textAlign: "center" }]}
+          >
+            :
+          </Text>
+          <Text style={[styles.tableCell, { width: "63%" }]}>
+            {pegawai.tempatLahir}, {pegawai.tanggalLahir}
+          </Text>
+        </View>
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[styles.tableCell, { width: "5%", textAlign: "center" }]}
+          >
+            5.
+          </Text>
+          <Text style={[styles.tableCell, { width: "30%" }]}>
+            Jenis Kelamin
+          </Text>
+          <Text
+            style={[styles.tableCell, { width: "2%", textAlign: "center" }]}
+          >
+            :
+          </Text>
+          <Text style={[styles.tableCell, { width: "63%" }]}>
+            {pegawai.jenisKelamin}
+          </Text>
+        </View>
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[styles.tableCell, { width: "5%", textAlign: "center" }]}
+          >
+            6.
+          </Text>
+          <Text style={[styles.tableCell, { width: "30%" }]}>
+            Pangkat/Gol.Ruang/Gol/TMT
+          </Text>
+          <Text
+            style={[styles.tableCell, { width: "2%", textAlign: "center" }]}
+          >
+            :
+          </Text>
+          <Text style={[styles.tableCell, { width: "63%" }]}>
+            {pegawai.pangkat}, {pegawai.golongan}, {pegawai.tmtPangkat}
+          </Text>
+        </View>
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[styles.tableCell, { width: "5%", textAlign: "center" }]}
+          >
+            7.
+          </Text>
+          <Text style={[styles.tableCell, { width: "30%" }]}>Jabatan /TMT</Text>
+          <Text
+            style={[styles.tableCell, { width: "2%", textAlign: "center" }]}
+          >
+            :
+          </Text>
+          <Text style={[styles.tableCell, { width: "63%" }]}>
+            {jabatanDanTmt}
+          </Text>
+        </View>
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[styles.tableCell, { width: "5%", textAlign: "center" }]}
+          >
+            8.
+          </Text>
+          <Text style={[styles.tableCell, { width: "30%" }]}>Unit Kerja</Text>
+          <Text
+            style={[styles.tableCell, { width: "2%", textAlign: "center" }]}
+          >
+            :
+          </Text>
+          <Text style={[styles.tableCell, { width: "63%" }]}>
+            {pegawai.unitKerja}
+          </Text>
+        </View>
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[styles.tableCell, { width: "5%", textAlign: "center" }]}
+          >
+            9.
+          </Text>
+          <Text style={[styles.tableCell, { width: "30%" }]}>Instansi</Text>
+          <Text
+            style={[styles.tableCell, { width: "2%", textAlign: "center" }]}
+          >
+            :
+          </Text>
+          <Text style={[styles.tableCell, { width: "63%" }]}>
+            {namaInstansi}
+          </Text>
+        </View>
+      </View>
+
+      {/* Credit Table */}
+      <View style={styles.table}>
+        <View style={styles.tableHeader}>
+          <Text
+            style={[
+              styles.tableCellBold,
+              { width: "100%", textAlign: "center" },
+            ]}
+          >
+            KONVERSI KE ANGKA KREDIT
+          </Text>
+        </View>
+
+        <View style={[styles.tableRow, { borderTopWidth: 1 }]}>
+          <Text
+            style={[
+              styles.tableCellBold,
+              { width: "35%", textAlign: "center" },
+            ]}
+          >
+            PREDIKAT
+          </Text>
+          <Text
+            style={[
+              styles.tableCellBold,
+              { width: "20%", textAlign: "center" },
+            ]}
+          >
+            PROSENTASE
+          </Text>
+          <Text
+            style={[
+              styles.tableCellBold,
+              { width: "20%", textAlign: "center" },
+            ]}
+          >
+            KOEFISIEN PER TAHUN
+          </Text>
+          <Text
+            style={[
+              styles.tableCellBold,
+              { width: "25%", textAlign: "center" },
+            ]}
+          >
+            ANGKA KREDIT YANG DI DAPAT
+          </Text>
+        </View>
+
+        {includeAngkaIntegrasi && angkaIntegrasiValue > 0 && (
+          <View style={styles.tableRow}>
+            <Text
+              style={[styles.tableCell, { width: "35%", textAlign: "center" }]}
+            >
+              AK Integrasi
+            </Text>
+            <Text
+              style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
+            >
+              .
+            </Text>
+            <Text
+              style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
+            >
+              .
+            </Text>
+            <Text
+              style={[styles.tableCell, { width: "25%", textAlign: "center" }]}
+            >
+              {angkaIntegrasiValue.toFixed(2)}
+            </Text>
+          </View>
+        )}
+
+        {includeAkPendidikan && akPendidikanValue > 0 && (
+          <View style={styles.tableRow}>
+            <Text
+              style={[styles.tableCell, { width: "35%", textAlign: "center" }]}
+            >
+              AK Pendidikan
+            </Text>
+            <Text
+              style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
+            >
+              .
+            </Text>
+            <Text
+              style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
+            >
+              .
+            </Text>
+            <Text
+              style={[styles.tableCell, { width: "25%", textAlign: "center" }]}
+            >
+              {akPendidikanValue.toFixed(2)}
+            </Text>
+          </View>
+        )}
+
+        {akList.map((akItem, index) => (
+          <View key={index} style={styles.tableRow}>
+            <Text
+              style={[styles.tableCell, { width: "35%", textAlign: "center" }]}
+            >
+              {akItem.penilaian}
+            </Text>
+            <Text
+              style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
+            >
+              {akItem.prosentase}%
+            </Text>
+            <Text
+              style={[styles.tableCell, { width: "20%", textAlign: "center" }]}
+            >
+              {akItem.koefisien}
+            </Text>
+            <Text
+              style={[styles.tableCell, { width: "25%", textAlign: "center" }]}
+            >
+              {akItem.jumlahAngkaKredit.toFixed(2)}
+            </Text>
+          </View>
+        ))}
+
+        <View style={styles.tableRow}>
+          <Text
+            style={[
+              styles.tableCellBold,
+              { width: "75%", textAlign: "right", paddingRight: 8 },
+            ]}
+          >
+            Jumlah Angka Kredit
+          </Text>
+          <Text
+            style={[
+              styles.tableCellBold,
+              { width: "25%", textAlign: "center" },
+            ]}
+          >
+            {totalAngkaKredit.toFixed(2)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <View style={styles.footerLeft}>
+          <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
+            ASLI disampaikan dengan hormat kepada:
+          </Text>
+          <Text style={{ marginBottom: 10 }}>
+            Jabatan Fungsional yang bersangkutan.
+          </Text>
+          <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
+            Tembusan disampaikan kepada:
+          </Text>
+          <Text style={{ marginBottom: 5 }}>
+            1. Jabatan Fungsional yang bersangkutan
+          </Text>
+          <Text style={{ marginBottom: 5 }}>2. Ketua/atasan unit kerja</Text>
+          <Text style={{ marginBottom: 5 }}>
+            3. Kepala Biro Kepegawaian dan Organisasi
+          </Text>
+          <Text style={{ marginBottom: 10 }}>
+            4. Pejabat lain yang dianggap perlu.
+          </Text>
+        </View>
+        <View style={styles.footerRight}>
+          <Text style={{ textAlign: "left" }}>
+            <Text>Ditetapkan di {tempatDitetapkan}</Text>
+            {"\n"}
+            <Text>Pada tanggal, {formatDateDDMMYYYY(tanggalDitetapkan)}.</Text>
+            {"\n"}
+            <Text style={{ fontWeight: "bold" }}>Pejabat Penilai Kinerja</Text>
+            {"\n\n\n\n\n\n"}
+            <Text style={{ textDecoration: "underline" }}>{penilai.nama}</Text>
+            {"\n"}
+            <Text>
+              {penilai.pangkat}, {penilai.golongan}
+            </Text>
+            {"\n"}
+            <Text>NIP. {penilai.nip}</Text>
+          </Text>
+        </View>
+      </View>
+    </Page>
+  );
+};
 
 // PDF Document Component
 export const KonversiReportPDF: React.FC<KonversiReportPDFProps> = (props) => (
