@@ -128,7 +128,7 @@ export function CetakPenetapan() {
             const selectedEmployee = pegawai.find(
               (p) => p.id === penilaian.pegawaiId,
             );
-            const penilai = instansi.find((i) => i.id === penilaian.penilaiId);
+            const penilai = pegawai.find((p) => p.id === penilaian.penilaiId);
 
             // Calculate AK for this single period
             const employeeAkIntegrasi = angkaIntegrasi.find(
@@ -144,8 +144,9 @@ export function CetakPenetapan() {
                   selectedEmployee?.golongan || "",
                 )
               : 0;
-            const totalAngkaKredit =
-              penilaian.angkaKredit + akIntegrasiValue + akPendidikanValue;
+            const totalAngkaKredit = Math.round((
+              penilaian.angkaKredit + akIntegrasiValue + akPendidikanValue
+            ) * 100) / 100;
 
             // Calculate Target AK for Next Rank/Jenjang
             const calculation = calculateTargetAK(
@@ -202,10 +203,10 @@ export function CetakPenetapan() {
                 tempatDitetapkan={penilaian.tempatDitetapkan}
                 tanggalDitetapkan={penilaian.tanggalDitetapkan}
                 penilai={{
-                  nama: penilai?.name || "-",
-                  pangkat: "-",
-                  golongan: "-",
-                  nip: "-",
+                  nama: penilai?.nama || "-",
+                  pangkat: penilai?.pangkat || "-",
+                  golongan: penilai?.golongan || "-",
+                  nip: penilai?.nip || "-",
                 }}
                 {...calculation}
               />
@@ -309,7 +310,7 @@ export function CetakPenetapan() {
                           {pn.tanggalAkhirPenilaian}
                         </span>
                         <span className="text-muted-foreground ml-2">
-                          ({pn.predikat} - {pn.angkaKredit.toFixed(2)} AK)
+                          ({pn.predikat} - {Math.round(pn.angkaKredit * 100) / 100} AK)
                         </span>
                       </Label>
                     </div>

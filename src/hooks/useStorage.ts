@@ -449,8 +449,8 @@ export function useAkPendidikanStorage() {
   const getTotalAkPendidikanByPegawai = useCallback(
     (pegawaiId: string) => {
       const items = akPendidikan.filter((ap) => ap.pegawaiId === pegawaiId);
-      // Sum up all calculated values (already based on MINIMAL_AK_MAPPING)
-      return items.reduce((sum, item) => sum + item.calculated_value, 0);
+      // Sum up all calculated values (recalculated to avoid floating-point issues)
+      return items.reduce((sum, item) => sum + Math.ceil(item.nilai_next_pangkat * 0.25 * 4) / 4, 0);
     },
     [akPendidikan],
   );

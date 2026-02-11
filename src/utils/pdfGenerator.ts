@@ -302,7 +302,7 @@ export async function generatePDFWithPuppeteer(
           "AK Integrasi",
           ".",
           ".",
-          reportData.angkaIntegrasiValue.toFixed(2),
+          (Math.round(reportData.angkaIntegrasiValue * 100) / 100).toString(),
         ]);
       }
 
@@ -312,7 +312,7 @@ export async function generatePDFWithPuppeteer(
           "AK Pendidikan",
           ".",
           ".",
-          reportData.akPendidikanValue.toFixed(2),
+          (Math.round(reportData.akPendidikanValue * 100) / 100).toString(),
         ]);
       }
 
@@ -322,7 +322,7 @@ export async function generatePDFWithPuppeteer(
           akItem.penilaian,
           `${akItem.prosentase}%`,
           akItem.koefisien,
-          akItem.jumlahAngkaKredit.toFixed(2),
+          (Math.round(akItem.jumlahAngkaKredit * 100) / 100).toString(),
         ]);
       });
 
@@ -331,7 +331,7 @@ export async function generatePDFWithPuppeteer(
         "Jumlah Angka Kredit",
         "",
         "",
-        reportData.totalAngkaKredit.toFixed(2),
+        (Math.round(reportData.totalAngkaKredit * 100) / 100).toString(),
       ]);
 
       autoTable(doc, {
@@ -531,7 +531,7 @@ function generateHTMLFromReportData(reportData: ReportData): string {
               <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">AK Integrasi</td>
               <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">.</td>
               <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">.</td>
-              <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${reportData.angkaIntegrasiValue.toFixed(2)}</td>
+              <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${(Math.round(reportData.angkaIntegrasiValue * 100) / 100)}</td>
             </tr>`
               : ""
           }
@@ -541,7 +541,7 @@ function generateHTMLFromReportData(reportData: ReportData): string {
               <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">AK Pendidikan</td>
               <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">.</td>
               <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">.</td>
-              <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${reportData.akPendidikanValue.toFixed(2)}</td>
+              <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${(Math.round(reportData.akPendidikanValue * 100) / 100)}</td>
             </tr>`
               : ""
           }
@@ -552,7 +552,7 @@ function generateHTMLFromReportData(reportData: ReportData): string {
               <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${akItem.penilaian}</td>
               <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${akItem.prosentase}%</td>
               <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${akItem.koefisien}</td>
-              <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${akItem.jumlahAngkaKredit.toFixed(2)}</td>
+              <td style="border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${(Math.round(akItem.jumlahAngkaKredit * 100) / 100)}</td>
             </tr>`,
             )
             .join("")}
@@ -560,7 +560,7 @@ function generateHTMLFromReportData(reportData: ReportData): string {
             <td colspan="3" style="text-align: right; font-weight: bold; border: 1px solid black; padding: 4px 6px; vertical-align: middle; word-wrap: break-word; padding-right: 8px;">
               Jumlah Angka Kredit
             </td>
-            <td style="font-weight: bold; border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${reportData.totalAngkaKredit.toFixed(2)}</td>
+            <td style="font-weight: bold; border: 1px solid black; padding: 4px 6px; vertical-align: middle; text-align: center; word-wrap: break-word;">${(Math.round(reportData.totalAngkaKredit * 100) / 100)}</td>
           </tr>
         </tbody>
       </table>

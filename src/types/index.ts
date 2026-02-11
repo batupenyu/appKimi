@@ -168,5 +168,6 @@ export const JENJANG_PENDIDIKAN_OPTIONS = [
 
 // AK Pendidikan calculation: 25% * Nilai Next Pangkat
 export function calculateAkPendidikan(nilaiNextPangkat: number): number {
-  return Math.round(nilaiNextPangkat * 0.25 * 100) / 100;
+  // Use Math.ceil to round up and avoid floating-point precision issues
+  return Math.ceil(nilaiNextPangkat * 0.25 * 4) / 4;
 }

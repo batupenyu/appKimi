@@ -146,7 +146,8 @@ function replaceTemplateVars(template, data) {
     (match, varName, decimals) => {
       const num = parseFloat(data[varName]);
       if (isNaN(num)) return "0.00";
-      return num.toFixed(parseInt(decimals));
+      const decimalPlaces = parseInt(decimals);
+      return (Math.round(num * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces)).toFixed(decimalPlaces);
     },
   );
 
@@ -201,8 +202,8 @@ app.post("/api/akumulasi/pdf", async (req, res) => {
       akList.push({
         penilaian: item.predikat || "-",
         prosentase: `${item.prosentase || 0}%`,
-        koefisien: item.koefisien?.toFixed(2) || "-",
-        jumlah_angka_kredit: item.angkaKredit || 0,
+        koefisien: item.koefisien != null ? (Math.round(item.koefisien * 100) / 100).toString() : "-",
+        jumlah_angka_kredit: item.angkaKredit != null ? (Math.round(item.angkaKredit * 100) / 100) : 0,
       });
     });
 

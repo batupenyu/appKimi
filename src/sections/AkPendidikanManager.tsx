@@ -132,7 +132,7 @@ export function AkPendidikanManager() {
       const nextJenjangText = jenjangName || "-";
 
       return {
-        calculatedValue: minimalJenjang * 0.25,
+        calculatedValue: Math.ceil(minimalJenjang * 0.25 * 4) / 4,
         nextPangkat: `${nextPangkatName} (${target.nextGolongan})`,
         nextJenjang: nextJenjangText,
         jenjangMinimal: minimalJenjang,
@@ -338,7 +338,7 @@ export function AkPendidikanManager() {
           <CardContent>
             <div className="text-2xl font-bold">
               {akPendidikan
-                .reduce((sum, item) => sum + item.calculated_value, 0)
+                .reduce((sum, item) => sum + Math.ceil(item.nilai_next_pangkat * 0.25 * 4) / 4, 0)
                 .toFixed(2)}
             </div>
           </CardContent>
@@ -428,7 +428,7 @@ export function AkPendidikanManager() {
                   </TableCell>
                   <TableCell>{item.nilai_next_pangkat}</TableCell>
                   <TableCell className="font-medium">
-                    {item.calculated_value.toFixed(2)}
+                    {(Math.ceil(item.nilai_next_pangkat * 0.25 * 4) / 4).toFixed(2)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

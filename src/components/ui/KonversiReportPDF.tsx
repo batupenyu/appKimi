@@ -417,7 +417,7 @@ export const KonversiReportPage: React.FC<KonversiReportPDFProps> = (props) => {
             <Text
               style={[styles.tableCell, { width: "25%", textAlign: "center" }]}
             >
-              {angkaIntegrasiValue.toFixed(2)}
+              {Math.round(angkaIntegrasiValue * 100) / 100}
             </Text>
           </View>
         )}
@@ -442,7 +442,7 @@ export const KonversiReportPage: React.FC<KonversiReportPDFProps> = (props) => {
             <Text
               style={[styles.tableCell, { width: "25%", textAlign: "center" }]}
             >
-              {akPendidikanValue.toFixed(2)}
+              {Math.round(akPendidikanValue * 100) / 100}
             </Text>
           </View>
         )}
@@ -467,7 +467,7 @@ export const KonversiReportPage: React.FC<KonversiReportPDFProps> = (props) => {
             <Text
               style={[styles.tableCell, { width: "25%", textAlign: "center" }]}
             >
-              {akItem.jumlahAngkaKredit.toFixed(2)}
+              {Math.round(akItem.jumlahAngkaKredit * 100) / 100}
             </Text>
           </View>
         ))}
@@ -487,7 +487,7 @@ export const KonversiReportPage: React.FC<KonversiReportPDFProps> = (props) => {
               { width: "25%", textAlign: "center" },
             ]}
           >
-            {totalAngkaKredit.toFixed(2)}
+            {Math.round(totalAngkaKredit * 100) / 100}
           </Text>
         </View>
       </View>

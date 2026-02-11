@@ -10,16 +10,16 @@ export function calculateMonthsBetween(startDate: string, endDate: string): numb
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  // Calculate the time difference in milliseconds
-  const timeDiff = end.getTime() - start.getTime();
+  // Calculate the difference in years and months
+  const yearDiff = end.getFullYear() - start.getFullYear();
+  const monthDiff = end.getMonth() - start.getMonth();
   
-  // Convert time difference to days (milliseconds to days)
-  const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
-  
-  // Convert days to months (using average days per month: 30.44)
-  // This accounts for leap years and varying month lengths
-  const monthsDiff = daysDiff / 30.44;
+  // Total months difference (inclusive of both start and end months)
+  let totalMonths = yearDiff * 12 + monthDiff;
 
-  // Ensure we don't return negative months
-  return Math.max(0, monthsDiff);
+  // Add 1 to make it inclusive (Jan to Dec = 12 months, not 11)
+  // This assumes that partial months count as full months for credit calculations
+  totalMonths += 1;
+
+  return Math.max(0, totalMonths);
 }

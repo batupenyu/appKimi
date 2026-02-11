@@ -121,8 +121,7 @@ export function CetakAkumulasi() {
           penilaian.tanggalAwalPenilaian,
           penilaian.tanggalAkhirPenilaian,
         );
-        const jumlahAngkaKredit =
-          (months / 12) * koefisien * (prosentase / 100);
+        const jumlahAngkaKredit = (months / 12) * koefisien * (prosentase / 100);
         return {
           penilaian: penilaian.predikat,
           prosentase,
@@ -156,6 +155,9 @@ export function CetakAkumulasi() {
       if (akPendidikanValue > 0) {
         totalAngkaKredit += akPendidikanValue;
       }
+
+      // Round the total to 2 decimal places for display
+      totalAngkaKredit = Math.round(totalAngkaKredit * 100) / 100;
 
       // Create PDF document
       const doc = (
@@ -192,12 +194,28 @@ export function CetakAkumulasi() {
             totalAngkaKredit={totalAngkaKredit}
             tempatDitetapkan={employeePeriods[0]?.tempatDitetapkan || "-"}
             tanggalDitetapkan={employeePeriods[0]?.tanggalDitetapkan || "-"}
-            penilai={{
-              nama: selectedInstansi?.namaPenilai || "-",
-              pangkat: selectedInstansi?.pangkatPenilai || "-",
-              golongan: selectedInstansi?.golonganPenilai || "-",
-              nip: selectedInstansi?.nipPenilai || "-",
-            }}
+            penilai={(() => {
+              // Try to get penilai from the first penilaian record
+              const firstPenilaian = employeePeriods[0];
+              if (firstPenilaian?.penilaiId) {
+                const penilai = pegawai.find(p => p.id === firstPenilaian.penilaiId);
+                if (penilai) {
+                  return {
+                    nama: penilai.nama || "-",
+                    pangkat: penilai.pangkat || "-",
+                    golongan: penilai.golongan || "-",
+                    nip: penilai.nip || "-",
+                  };
+                }
+              }
+              // Fallback to instansi data if penilai not found in penilaian
+              return {
+                nama: selectedInstansi?.namaPenilai || "-",
+                pangkat: selectedInstansi?.pangkatPenilai || "-",
+                golongan: selectedInstansi?.golonganPenilai || "-",
+                nip: selectedInstansi?.nipPenilai || "-",
+              };
+            })()}
           />
         </Document>
       );

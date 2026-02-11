@@ -185,7 +185,7 @@ const KonversiReport = React.forwardRef<HTMLDivElement, KonversiReportProps>(
                     <td>AK Integrasi</td>
                     <td>.</td>
                     <td>.</td>
-                    <td>{angkaIntegrasiValue.toFixed(2)}</td>
+                    <td>{Math.round(angkaIntegrasiValue * 100) / 100}</td>
                   </tr>
                 )}
                 {includeAkPendidikan && akPendidikanValue > 0 && (
@@ -193,7 +193,7 @@ const KonversiReport = React.forwardRef<HTMLDivElement, KonversiReportProps>(
                     <td>AK Pendidikan</td>
                     <td>.</td>
                     <td>.</td>
-                    <td>{akPendidikanValue.toFixed(2)}</td>
+                    <td>{Math.round(akPendidikanValue * 100) / 100}</td>
                   </tr>
                 )}
                 {akList.map((akItem, index) => (
@@ -201,7 +201,7 @@ const KonversiReport = React.forwardRef<HTMLDivElement, KonversiReportProps>(
                     <td>{akItem.penilaian}</td>
                     <td>{akItem.prosentase}%</td>
                     <td>{akItem.koefisien}</td>
-                    <td>{akItem.jumlahAngkaKredit.toFixed(2)}</td>
+                    <td>{Math.round(akItem.jumlahAngkaKredit * 100) / 100}</td>
                   </tr>
                 ))}
                 <tr>
@@ -212,7 +212,7 @@ const KonversiReport = React.forwardRef<HTMLDivElement, KonversiReportProps>(
                   >
                     Jumlah Angka Kredit
                   </td>
-                  <td className="font-bold">{totalAngkaKredit.toFixed(2)}</td>
+                  <td className="font-bold">{Math.round(totalAngkaKredit * 100) / 100}</td>
                 </tr>
               </tbody>
             </table>
