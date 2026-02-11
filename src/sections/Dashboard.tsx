@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { Users, Calculator, Building2, TrendingUp } from 'lucide-react';
+import { Users, Calculator, Building2, TrendingUp, Briefcase } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePegawaiStorage, useAngkaIntegrasiStorage, useInstansiStorage } from '@/hooks/useStorage';
 
 export function Dashboard() {
@@ -20,6 +21,16 @@ export function Dashboard() {
       ? (angkaIntegrasi.reduce((sum, ai) => sum + ai.value, 0) / totalAngkaIntegrasi).toFixed(2)
       : '0';
 
+    // Group by jabatan
+    const jabatanCounts: Record<string, number> = {};
+    pegawai.forEach(p => {
+      const jabatan = p.jabatan || 'Tidak ada jabatan';
+      jabatanCounts[jabatan] = (jabatanCounts[jabatan] || 0) + 1;
+    });
+
+    const jabatanList = Object.entries(jabatanCounts)
+      .sort((a, b) => b[1] - a[1]); // Sort by count descending
+
     return {
       totalPegawai,
       totalAngkaIntegrasi,
@@ -27,6 +38,7 @@ export function Dashboard() {
       lakiLaki,
       perempuan,
       avgAngkaIntegrasi,
+      jabatanList,
     };
   }, [pegawai, angkaIntegrasi, instansi]);
 
@@ -98,6 +110,37 @@ export function Dashboard() {
         </Card>
       </div>
 
+      {/* Jabatan Summary */}
+      {stats.jabatanList.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Briefcase className="h-4 w-4" />
+              Ringkasan per Jabatan
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Jabatan</TableHead>
+                    <TableHead className="text-right">Jumlah</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stats.jabatanList.map(([jabatan, count]) => (
+                    <TableRow key={jabatan}>
+                      <TableCell className="font-medium">{jabatan}</TableCell>
+                      <TableCell className="text-right">{count}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick Info */}
       <div className="grid gap-4 md:grid-cols-2">

@@ -123,17 +123,24 @@ export function PegawaiManager() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
-  // Filter and paginate pegawai
+  // Filter, sort by nama (ascending), and paginate pegawai
   const filteredPegawai = useMemo(() => {
-    if (!searchQuery) return pegawai;
-    const query = searchQuery.toLowerCase();
-    return pegawai.filter(
-      (p) =>
-        p.nama.toLowerCase().includes(query) ||
-        p.nip.toLowerCase().includes(query) ||
-        p.jabatan.toLowerCase().includes(query) ||
-        p.unit_kerja.toLowerCase().includes(query),
-    );
+    let result = [...pegawai];
+    
+    // Sort by nama ascending
+    result.sort((a, b) => a.nama.localeCompare(b.nama));
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.nama.toLowerCase().includes(query) ||
+          p.nip.toLowerCase().includes(query) ||
+          p.jabatan.toLowerCase().includes(query) ||
+          p.unit_kerja.toLowerCase().includes(query),
+      );
+    }
+    return result;
   }, [pegawai, searchQuery]);
 
   const totalPages = Math.ceil(filteredPegawai.length / ITEMS_PER_PAGE);

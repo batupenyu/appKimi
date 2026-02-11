@@ -492,9 +492,25 @@ export function PenilaianAngkaKreditManager() {
 
       const blob = await pdf(doc).toBlob();
       const url = URL.createObjectURL(blob);
+      
+      // Generate filename based on employee name and period
+      const firstPenilaian = selectedPenilaianList[0];
+      const firstEmployee = pegawaiMap.get(firstPenilaian.pegawaiId);
+      const employeeName = firstEmployee?.nama?.replace(/\s+/g, '-') || 'Pegawai';
+      const period = firstPenilaian.tanggalAwalPenilaian;
+      
+      let filename: string;
+      if (selectedPeriodIds.length === 1) {
+        // Single period - use employee name
+        filename = `Konversi an. ${employeeName}.pdf`;
+      } else {
+        // Multiple periods
+        filename = `Konversi an. ${employeeName} - ${selectedPeriodIds.length} periode.pdf`;
+      }
+      
       const link = document.createElement("a");
       link.href = url;
-      link.download = `konversi-angka-kredit-${selectedPeriodIds.length}-periode.pdf`;
+      link.download = filename;
       link.click();
       URL.revokeObjectURL(url);
 

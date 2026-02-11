@@ -5,11 +5,14 @@ import { inspectAttr } from 'kimi-plugin-inspect-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
+  base: process.env.VERCEL ? "/" : "./",
   plugins: [inspectAttr(), react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  server: {
+    allowedHosts: ['nonidiomatical-teetotally-camron.ngrok-free.dev'],
   },
 });
